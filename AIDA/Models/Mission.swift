@@ -7,12 +7,14 @@ struct Mission {
 }
 
 extension Mission {
-    static let placeholders: [Mission] = [
-        Mission(title: "Esplorativo",
-                subtitle: "Scopri angoli nascosti della città a passo lento.",
-                estimatedDuration: "45 min"),
-        Mission(title: "Corsa",
-                subtitle: "Una missione dinamica con tappe a ritmo sostenuto.",
-                estimatedDuration: "30 min")
-    ]
+    static var localizedPlaceholders: [Mission] {
+        [
+            Mission(title: L10n.missionExplorativeTitle.current,
+                    subtitle: L10n.missionExplorativeSubtitle.current,
+                    estimatedDuration: L10n.missionExplorativeDuration.current),
+            Mission(title: L10n.missionRunTitle.current,
+                    subtitle: L10n.missionRunSubtitle.current,
+                    estimatedDuration: L10n.missionRunDuration.current)
+        ]
+    }
 }

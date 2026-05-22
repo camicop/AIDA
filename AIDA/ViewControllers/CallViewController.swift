@@ -46,7 +46,7 @@ final class CallViewController: UIViewController {
         headerStack.translatesAutoresizingMaskIntoConstraints = false
 
         var answerConfig = UIButton.Configuration.filled()
-        answerConfig.title = "Rispondi"
+        answerConfig.title = viewModel.answerButtonTitle
         answerConfig.image = UIImage(systemName: "phone.fill")
         answerConfig.imagePadding = 8
         answerConfig.baseBackgroundColor = .systemGreen
@@ -56,7 +56,7 @@ final class CallViewController: UIViewController {
         answerButton.addTarget(self, action: #selector(didTapAnswer), for: .touchUpInside)
 
         var chatConfig = UIButton.Configuration.tinted()
-        chatConfig.title = "Non posso parlare, preferisco chattare"
+        chatConfig.title = viewModel.chatButtonTitle
         chatConfig.image = UIImage(systemName: "bubble.left.and.bubble.right.fill")
         chatConfig.imagePadding = 8
         chatConfig.cornerStyle = .large

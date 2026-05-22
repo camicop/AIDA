@@ -4,6 +4,7 @@ final class HomeViewController: UIViewController {
     private let viewModel: HomeViewModel
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     private let titleLabel = UILabel()
+    private let languageButton = UIButton(type: .system)
 
     init(viewModel: HomeViewModel) {
         self.viewModel = viewModel
@@ -17,16 +18,32 @@ final class HomeViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Theme.background
-        title = "A.I.D.A."
         setupViews()
+        applyLocalizedContent()
     }
 
     private func setupViews() {
-        titleLabel.text = viewModel.title
         titleLabel.font = .systemFont(ofSize: 28, weight: .bold)
         titleLabel.numberOfLines = 0
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(titleLabel)
+        titleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        var config = UIButton.Configuration.tinted()
+        config.image = UIImage(systemName: "globe")
+        config.imagePadding = 6
+        config.cornerStyle = .capsule
+        config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14)
+        languageButton.configuration = config
+        languageButton.setContentHuggingPriority(.required, for: .horizontal)
+        languageButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        languageButton.addTarget(self, action: #selector(didTapLanguageButton), for: .touchUpInside)
+
+        let headerStack = UIStackView(arrangedSubviews: [titleLabel, languageButton])
+        headerStack.axis = .horizontal
+        headerStack.spacing = 12
+        headerStack.alignment = .center
+        headerStack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(headerStack)
 
         tableView.dataSource = self
         tableView.delegate = self
@@ -37,15 +54,28 @@ final class HomeViewController: UIViewController {
         view.addSubview(tableView)
 
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: Theme.padding),
-            titleLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-            titleLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+            headerStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: Theme.padding),
+            headerStack.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+            headerStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
 
-            tableView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: Theme.padding),
+            tableView.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: Theme.padding),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+    }
+
+    private func applyLocalizedContent() {
+        title = viewModel.navTitle
+        titleLabel.text = viewModel.title
+        languageButton.configuration?.title = viewModel.currentLanguage.displayName
+        tableView.reloadData()
+    }
+
+    @objc private func didTapLanguageButton() {
+        let next: Language = viewModel.currentLanguage == .italian ? .english : .italian
+        viewModel.currentLanguage = next
+        applyLocalizedContent()
     }
 }
 

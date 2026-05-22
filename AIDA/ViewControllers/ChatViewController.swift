@@ -20,7 +20,7 @@ final class ChatViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Theme.background
-        title = "Chat con A.I.D.A."
+        title = viewModel.screenTitle
         viewModel.delegate = self
         setupViews()
         observeKeyboard()
@@ -42,7 +42,7 @@ final class ChatViewController: UIViewController {
         inputContainer.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(inputContainer)
 
-        textField.placeholder = "Scrivi ad A.I.D.A.…"
+        textField.placeholder = viewModel.inputPlaceholder
         textField.borderStyle = .roundedRect
         textField.returnKeyType = .send
         textField.delegate = self

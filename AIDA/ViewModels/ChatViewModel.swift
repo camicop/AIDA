@@ -7,9 +7,19 @@ protocol ChatViewModelDelegate: AnyObject {
 final class ChatViewModel {
     weak var delegate: ChatViewModelDelegate?
 
-    private(set) var messages: [ChatMessage] = [
-        ChatMessage(sender: .agent, text: "Ciao, agente. Sono A.I.D.A. Sei pronto a partire?")
-    ]
+    var screenTitle: String { L10n.chatTitle.current }
+    var inputPlaceholder: String { L10n.chatPlaceholder.current }
+
+    private let agentReplyText: String
+
+    private(set) var messages: [ChatMessage]
+
+    init() {
+        self.messages = [
+            ChatMessage(sender: .agent, text: L10n.chatAgentGreeting.current)
+        ]
+        self.agentReplyText = L10n.chatAgentReply.current
+    }
 
     func sendUserMessage(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -20,7 +30,7 @@ final class ChatViewModel {
         Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(800))
             guard let self else { return }
-            self.messages.append(ChatMessage(sender: .agent, text: "Ricevuto. Resta in attesa di istruzioni…"))
+            self.messages.append(ChatMessage(sender: .agent, text: self.agentReplyText))
             self.delegate?.chatViewModelDidUpdateMessages(self)
         }
     }

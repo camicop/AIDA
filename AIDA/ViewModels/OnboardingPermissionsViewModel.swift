@@ -7,16 +7,19 @@ protocol OnboardingPermissionsViewModelDelegate: AnyObject {
 final class OnboardingPermissionsViewModel {
     weak var delegate: OnboardingPermissionsViewModelDelegate?
 
-    let title = "Configura la tua avventura"
+    var title: String { L10n.onboardingTitle.current }
+    var startButtonTitle: String { L10n.onboardingStart.current }
+    var mandatoryTag: String { L10n.onboardingMandatoryTag.current }
+
     let mission: Mission
-    let permissions: [Permission] = Permission.all
+    var permissions: [Permission] { Permission.localizedAll }
 
     private var grantedStates: [Permission.Kind: Bool]
 
     init(mission: Mission) {
         self.mission = mission
         var initial: [Permission.Kind: Bool] = [:]
-        for permission in Permission.all {
+        for permission in Permission.localizedAll {
             initial[permission.kind] = permission.isMandatory
         }
         self.grantedStates = initial

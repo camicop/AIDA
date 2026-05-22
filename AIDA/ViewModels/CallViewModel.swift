@@ -8,9 +8,12 @@ protocol CallViewModelDelegate: AnyObject {
 final class CallViewModel {
     weak var delegate: CallViewModelDelegate?
 
-    let agentName = "A.I.D.A."
-    let agentSubtitle = "Chiamata in arrivo…"
+    var agentName: String { L10n.appName.current }
+    var agentSubtitle: String { L10n.callIncoming.current }
     let agentIconName = "waveform.circle.fill"
+
+    var answerButtonTitle: String { L10n.callAnswer.current }
+    var chatButtonTitle: String { L10n.callPreferChat.current }
 
     func answer() {
         delegate?.callDidAnswer(self)

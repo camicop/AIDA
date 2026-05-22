@@ -1,13 +1,13 @@
 import Foundation
 
 final class AudioNavigationViewModel {
-    let statusText = "In ascolto…"
-    let sampleSpeech = "Procedi dritto per cinquanta metri, poi gira a sinistra. Quando senti il segnale, fermati e ascolta."
+    var statusText: String { L10n.audioNavigationStatus.current }
+    private let sampleSpeech: String
 
-    private let speechService: SpeechService
+    private let speechService = SpeechService()
 
-    init(speechService: SpeechService) {
-        self.speechService = speechService
+    init() {
+        self.sampleSpeech = L10n.audioNavigationSampleSpeech.current
     }
 
     func startNarration() {

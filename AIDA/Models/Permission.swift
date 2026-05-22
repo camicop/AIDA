@@ -16,26 +16,28 @@ struct Permission {
 }
 
 extension Permission {
-    static let all: [Permission] = [
-        Permission(kind: .gps,
-                   title: "Posizione",
-                   description: "Indispensabile per guidarti tra le tappe della missione.",
-                   iconName: "location.fill",
-                   isMandatory: true),
-        Permission(kind: .microphone,
-                   title: "Microfono",
-                   description: "Per parlare con l'agente AI durante l'avventura.",
-                   iconName: "mic.fill",
-                   isMandatory: false),
-        Permission(kind: .camera,
-                   title: "Fotocamera",
-                   description: "Per scattare foto agli indizi e ai luoghi visitati.",
-                   iconName: "camera.fill",
-                   isMandatory: false),
-        Permission(kind: .healthKit,
-                   title: "HealthKit",
-                   description: "Adatta il ritmo della missione al tuo stato di forma.",
-                   iconName: "heart.fill",
-                   isMandatory: false)
-    ]
+    static var localizedAll: [Permission] {
+        [
+            Permission(kind: .gps,
+                       title: L10n.permissionGPSTitle.current,
+                       description: L10n.permissionGPSDescription.current,
+                       iconName: "location.fill",
+                       isMandatory: true),
+            Permission(kind: .microphone,
+                       title: L10n.permissionMicrophoneTitle.current,
+                       description: L10n.permissionMicrophoneDescription.current,
+                       iconName: "mic.fill",
+                       isMandatory: false),
+            Permission(kind: .camera,
+                       title: L10n.permissionCameraTitle.current,
+                       description: L10n.permissionCameraDescription.current,
+                       iconName: "camera.fill",
+                       isMandatory: false),
+            Permission(kind: .healthKit,
+                       title: L10n.permissionHealthKitTitle.current,
+                       description: L10n.permissionHealthKitDescription.current,
+                       iconName: "heart.fill",
+                       isMandatory: false)
+        ]
+    }
 }

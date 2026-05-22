@@ -2,7 +2,6 @@ import UIKit
 
 final class AppCoordinator {
     private let navigationController: UINavigationController
-    private let speechService = SpeechService()
 
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
@@ -27,7 +26,7 @@ extension AppCoordinator: HomeViewModelDelegate {
 
 extension AppCoordinator: OnboardingPermissionsViewModelDelegate {
     func onboardingDidComplete(_ viewModel: OnboardingPermissionsViewModel) {
-        let briefingVM = BriefingViewModel(mission: viewModel.mission, speechService: speechService)
+        let briefingVM = BriefingViewModel(mission: viewModel.mission)
         briefingVM.delegate = self
         let vc = BriefingViewController(viewModel: briefingVM)
         navigationController.pushViewController(vc, animated: true)
@@ -45,7 +44,7 @@ extension AppCoordinator: BriefingViewModelDelegate {
 
 extension AppCoordinator: CallViewModelDelegate {
     func callDidAnswer(_ viewModel: CallViewModel) {
-        let audioVM = AudioNavigationViewModel(speechService: speechService)
+        let audioVM = AudioNavigationViewModel()
         let vc = AudioNavigationViewController(viewModel: audioVM)
         navigationController.pushViewController(vc, animated: true)
     }

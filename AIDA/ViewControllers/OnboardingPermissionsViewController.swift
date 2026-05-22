@@ -31,7 +31,7 @@ final class OnboardingPermissionsViewController: UIViewController {
         view.addSubview(tableView)
 
         var config = UIButton.Configuration.filled()
-        config.title = "Inizia"
+        config.title = viewModel.startButtonTitle
         config.cornerStyle = .large
         config.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 24, bottom: 14, trailing: 24)
         startButton.configuration = config
@@ -65,6 +65,7 @@ extension OnboardingPermissionsViewController: UITableViewDataSource, UITableVie
         let cell = tableView.dequeueReusableCell(withIdentifier: PermissionToggleCell.reuseID, for: indexPath) as! PermissionToggleCell
         let permission = viewModel.permissions[indexPath.row]
         cell.configure(with: permission,
+                       mandatoryTag: viewModel.mandatoryTag,
                        isOn: viewModel.isGranted(permission.kind)) { [weak self] isOn in
             self?.viewModel.setGranted(isOn, for: permission.kind)
         }
@@ -131,10 +132,13 @@ private final class PermissionToggleCell: UITableViewCell {
         ])
     }
 
-    func configure(with permission: Permission, isOn: Bool, onChange: @escaping (Bool) -> Void) {
+    func configure(with permission: Permission,
+                   mandatoryTag: String,
+                   isOn: Bool,
+                   onChange: @escaping (Bool) -> Void) {
         iconView.image = UIImage(systemName: permission.iconName)
-        let mandatoryTag = permission.isMandatory ? "  •  obbligatorio" : ""
-        titleLabel.text = permission.title + mandatoryTag
+        let tagSuffix = permission.isMandatory ? mandatoryTag : ""
+        titleLabel.text = permission.title + tagSuffix
         descriptionLabel.text = permission.description
         toggle.isOn = isOn
         toggle.isEnabled = !permission.isMandatory
