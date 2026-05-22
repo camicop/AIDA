@@ -4,8 +4,15 @@ protocol OnboardingPermissionsViewModelDelegate: AnyObject {
     func onboardingDidComplete(_ viewModel: OnboardingPermissionsViewModel)
 }
 
+protocol OnboardingPermissionsViewModelBinding: AnyObject {
+    func onboardingViewModel(_ viewModel: OnboardingPermissionsViewModel,
+                              didUpdateGrantedFor kind: Permission.Kind,
+                              granted: Bool)
+}
+
 final class OnboardingPermissionsViewModel {
     weak var delegate: OnboardingPermissionsViewModelDelegate?
+    weak var binding: OnboardingPermissionsViewModelBinding?
 
     var title: String { L10n.onboardingTitle.current }
     var startButtonTitle: String { L10n.onboardingStart.current }
@@ -14,28 +21,50 @@ final class OnboardingPermissionsViewModel {
     let mission: Mission
     var permissions: [Permission] { Permission.localizedAll }
 
-    private var grantedStates: [Permission.Kind: Bool]
+    var canStart: Bool {
+        grantedStates[.gps] ?? false
+    }
+
+    private var grantedStates: [Permission.Kind: Bool] = [:]
+    private let permissionsService = PermissionsService()
 
     init(mission: Mission) {
         self.mission = mission
-        var initial: [Permission.Kind: Bool] = [:]
-        for permission in Permission.localizedAll {
-            initial[permission.kind] = permission.isMandatory
-        }
-        self.grantedStates = initial
     }
 
     func isGranted(_ kind: Permission.Kind) -> Bool {
         grantedStates[kind] ?? false
     }
 
-    func setGranted(_ granted: Bool, for kind: Permission.Kind) {
-        guard let permission = permissions.first(where: { $0.kind == kind }) else { return }
-        if permission.isMandatory { return }
-        grantedStates[kind] = granted
+    func didToggle(kind: Permission.Kind, isOn: Bool) {
+        if isOn {
+            requestPermission(for: kind)
+        } else {
+            grantedStates[kind] = false
+            binding?.onboardingViewModel(self, didUpdateGrantedFor: kind, granted: false)
+        }
     }
 
     func confirm() {
+        guard canStart else { return }
         delegate?.onboardingDidComplete(self)
+    }
+
+    private func requestPermission(for kind: Permission.Kind) {
+        let handler: (Bool) -> Void = { [weak self] granted in
+            guard let self else { return }
+            self.grantedStates[kind] = granted
+            self.binding?.onboardingViewModel(self, didUpdateGrantedFor: kind, granted: granted)
+        }
+        switch kind {
+        case .gps:
+            permissionsService.requestLocation(completion: handler)
+        case .microphone:
+            permissionsService.requestMicrophone(completion: handler)
+        case .camera:
+            permissionsService.requestCamera(completion: handler)
+        case .healthKit:
+            permissionsService.requestHealthKit(completion: handler)
+        }
     }
 }

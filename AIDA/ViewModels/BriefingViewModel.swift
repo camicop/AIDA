@@ -18,13 +18,20 @@ final class BriefingViewModel {
     var screenTitle: String { L10n.briefingTitle.current }
     let briefingText: String
     var readyButtonTitle: String { L10n.briefingReady.current }
+
     var playButtonTitle: String {
         switch playbackState {
-        case .idle: return L10n.briefingListen.current
-        case .speaking: return L10n.briefingPause.current
-        case .paused: return L10n.briefingResume.current
+        case .idle:
+            return speechStartOffset > 0
+                ? L10n.briefingResume.current
+                : L10n.briefingListen.current
+        case .speaking:
+            return L10n.briefingPause.current
+        case .paused:
+            return L10n.briefingResume.current
         }
     }
+
     var playButtonIconName: String {
         switch playbackState {
         case .idle, .paused: return "play.fill"
@@ -47,10 +54,19 @@ final class BriefingViewModel {
     func togglePlayback() {
         switch playbackState {
         case .idle:
-            speechStartOffset = 0
-            spokenLocation = 0
-            binding?.briefingViewModel(self, didUpdateSpokenLocation: 0)
-            speechService.speak(briefingText)
+            let nsText = briefingText as NSString
+            let start = min(max(0, speechStartOffset), nsText.length)
+            if start >= nsText.length {
+                speechStartOffset = 0
+                spokenLocation = 0
+                binding?.briefingViewModel(self, didUpdateSpokenLocation: 0)
+                speechService.speak(briefingText)
+            } else {
+                spokenLocation = start
+                binding?.briefingViewModel(self, didUpdateSpokenLocation: start)
+                let substring = nsText.substring(from: start)
+                speechService.speak(substring)
+            }
         case .speaking:
             speechService.pause()
         case .paused:
@@ -64,10 +80,7 @@ final class BriefingViewModel {
         speechStartOffset = wordStart
         spokenLocation = wordStart
         binding?.briefingViewModel(self, didUpdateSpokenLocation: wordStart)
-        let nsText = briefingText as NSString
-        guard wordStart < nsText.length else { return }
-        let substring = nsText.substring(from: wordStart)
-        speechService.speak(substring)
+        binding?.briefingViewModelDidChangePlaybackState(self)
     }
 
     func previewSpokenLocation(at index: Int) {
@@ -106,6 +119,7 @@ extension BriefingViewModel: SpeechServiceDelegate {
 
     func speechServiceDidFinish(_ service: SpeechService) {
         spokenLocation = (briefingText as NSString).length
+        speechStartOffset = 0
         binding?.briefingViewModel(self, didUpdateSpokenLocation: spokenLocation)
     }
 }

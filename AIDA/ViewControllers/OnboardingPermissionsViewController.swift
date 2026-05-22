@@ -18,7 +18,9 @@ final class OnboardingPermissionsViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = Theme.background
         title = viewModel.title
+        viewModel.binding = self
         setupViews()
+        updateStartButtonState()
     }
 
     private func setupViews() {
@@ -51,6 +53,10 @@ final class OnboardingPermissionsViewController: UIViewController {
         ])
     }
 
+    private func updateStartButtonState() {
+        startButton.isEnabled = viewModel.canStart
+    }
+
     @objc private func didTapStart() {
         viewModel.confirm()
     }
@@ -67,9 +73,23 @@ extension OnboardingPermissionsViewController: UITableViewDataSource, UITableVie
         cell.configure(with: permission,
                        mandatoryTag: viewModel.mandatoryTag,
                        isOn: viewModel.isGranted(permission.kind)) { [weak self] isOn in
-            self?.viewModel.setGranted(isOn, for: permission.kind)
+            self?.viewModel.didToggle(kind: permission.kind, isOn: isOn)
         }
         return cell
+    }
+}
+
+extension OnboardingPermissionsViewController: OnboardingPermissionsViewModelBinding {
+    func onboardingViewModel(_ viewModel: OnboardingPermissionsViewModel,
+                              didUpdateGrantedFor kind: Permission.Kind,
+                              granted: Bool) {
+        if let row = viewModel.permissions.firstIndex(where: { $0.kind == kind }) {
+            let indexPath = IndexPath(row: row, section: 0)
+            if let cell = tableView.cellForRow(at: indexPath) as? PermissionToggleCell {
+                cell.setToggleOn(granted)
+            }
+        }
+        updateStartButtonState()
     }
 }
 
@@ -140,9 +160,12 @@ private final class PermissionToggleCell: UITableViewCell {
         let tagSuffix = permission.isMandatory ? mandatoryTag : ""
         titleLabel.text = permission.title + tagSuffix
         descriptionLabel.text = permission.description
-        toggle.isOn = isOn
-        toggle.isEnabled = !permission.isMandatory
+        toggle.setOn(isOn, animated: false)
         self.onChange = onChange
+    }
+
+    func setToggleOn(_ on: Bool) {
+        toggle.setOn(on, animated: true)
     }
 
     @objc private func toggleChanged() {
