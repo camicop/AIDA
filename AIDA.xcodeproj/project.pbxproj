@@ -15,7 +15,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				AIDA.entitlements,
 			);
 			target = 9021CB6C2FBDF70000070C3B /* AIDA */;
 		};

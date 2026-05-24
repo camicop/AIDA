@@ -2,8 +2,13 @@ import UIKit
 
 final class AudioNavigationViewController: UIViewController {
     private let viewModel: AudioNavigationViewModel
+
     private let pulseView = UIView()
     private let statusLabel = UILabel()
+    private let distanceLabel = UILabel()
+    private let debugTitleLabel = UILabel()
+    private let debugSwitch = UISwitch()
+    private let debugSlider = UISlider()
 
     init(viewModel: AudioNavigationViewModel) {
         self.viewModel = viewModel
@@ -17,6 +22,7 @@ final class AudioNavigationViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
+        viewModel.binding = self
         setupViews()
     }
 
@@ -24,11 +30,13 @@ final class AudioNavigationViewController: UIViewController {
         super.viewDidAppear(animated)
         startPulse()
         viewModel.startNarration()
+        viewModel.startTracking()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         viewModel.stopNarration()
+        viewModel.stopTracking()
     }
 
     private func setupViews() {
@@ -44,15 +52,60 @@ final class AudioNavigationViewController: UIViewController {
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statusLabel)
 
+        distanceLabel.text = viewModel.distancePlaceholder
+        distanceLabel.textColor = .white
+        distanceLabel.font = .systemFont(ofSize: 32, weight: .bold)
+        distanceLabel.textAlignment = .center
+        distanceLabel.adjustsFontSizeToFitWidth = true
+        distanceLabel.minimumScaleFactor = 0.6
+        distanceLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(distanceLabel)
+
+        debugTitleLabel.text = viewModel.debugSimulatorLabel
+        debugTitleLabel.textColor = .lightGray
+        debugTitleLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        debugTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        debugSwitch.translatesAutoresizingMaskIntoConstraints = false
+        debugSwitch.addTarget(self, action: #selector(debugSwitchChanged), for: .valueChanged)
+
+        let switchRow = UIStackView(arrangedSubviews: [debugTitleLabel, debugSwitch])
+        switchRow.axis = .horizontal
+        switchRow.spacing = 12
+        switchRow.alignment = .center
+        switchRow.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(switchRow)
+
+        debugSlider.minimumValue = 0
+        debugSlider.maximumValue = 60
+        debugSlider.value = 60
+        debugSlider.isEnabled = false
+        debugSlider.minimumTrackTintColor = Theme.accent
+        debugSlider.addTarget(self, action: #selector(debugSliderChanged), for: .valueChanged)
+        debugSlider.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(debugSlider)
+
         NSLayoutConstraint.activate([
             pulseView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            pulseView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            pulseView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -60),
             pulseView.widthAnchor.constraint(equalToConstant: 120),
             pulseView.heightAnchor.constraint(equalToConstant: 120),
 
-            statusLabel.topAnchor.constraint(equalTo: pulseView.bottomAnchor, constant: 32),
+            statusLabel.topAnchor.constraint(equalTo: pulseView.bottomAnchor, constant: 28),
             statusLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-            statusLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor)
+            statusLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+
+            distanceLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 16),
+            distanceLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+            distanceLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+
+            switchRow.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+            switchRow.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+            switchRow.bottomAnchor.constraint(equalTo: debugSlider.topAnchor, constant: -16),
+
+            debugSlider.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+            debugSlider.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+            debugSlider.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24)
         ])
     }
 
@@ -65,4 +118,36 @@ final class AudioNavigationViewController: UIViewController {
             self.pulseView.alpha = 0.4
         })
     }
+
+    @objc private func debugSwitchChanged() {
+        let enabled = debugSwitch.isOn
+        debugSlider.isEnabled = enabled
+        viewModel.setDebugSimulatorEnabled(enabled)
+        if enabled {
+            viewModel.didUpdateDistance(Double(debugSlider.value))
+        }
+    }
+
+    @objc private func debugSliderChanged() {
+        viewModel.didUpdateDistance(Double(debugSlider.value))
+    }
+}
+
+extension AudioNavigationViewController: AudioNavigationViewModelBinding {
+    func audioNavigationViewModel(_ viewModel: AudioNavigationViewModel, didUpdateDistanceText text: String) {
+        distanceLabel.text = text
+    }
+
+    func audioNavigationViewModel(_ viewModel: AudioNavigationViewModel, didUpdateAlignment alignment: Double) {
+        let color = directionColor(for: alignment)
+        UIView.animate(withDuration: 0.2) {
+            self.view.backgroundColor = color
+        }
+    }
+}
+
+private func directionColor(for alignment: Double) -> UIColor {
+    let clamped = max(0, min(1, alignment))
+    let hue = CGFloat((1 - clamped) * (120.0 / 360.0))
+    return UIColor(hue: hue, saturation: 0.7, brightness: 0.55, alpha: 1.0)
 }

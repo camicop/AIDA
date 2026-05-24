@@ -123,11 +123,26 @@ enum L10n {
     static let callPreferChat = LocalizedString(
         it: "Non posso parlare, preferisco chattare",
         en: "I can't talk, I'd rather chat")
+    static let callTestNavigation = LocalizedString(
+        it: "Test Navigazione (GPS/Aptica)",
+        en: "Test Navigation (GPS/Haptics)")
 
     static let audioNavigationStatus = LocalizedString(it: "In ascolto…", en: "Listening…")
     static let audioNavigationSampleSpeech = LocalizedString(
         it: "Procedi dritto per cinquanta metri, poi gira a sinistra. Quando senti il segnale, fermati e ascolta.",
         en: "Walk straight for fifty meters, then turn left. When you hear the signal, stop and listen.")
+    static let audioNavigationDistancePlaceholder = LocalizedString(
+        it: "Distanza: --",
+        en: "Distance: --")
+    static let audioNavigationDistanceFormat = LocalizedString(
+        it: "Distanza: %.1f m",
+        en: "Distance: %.1f m")
+    static let audioNavigationDebugSimulator = LocalizedString(
+        it: "Debug Simulator",
+        en: "Debug Simulator")
+    static let audioNavigationTargetReached = LocalizedString(
+        it: "Obiettivo raggiunto!",
+        en: "Target reached!")
 
     static let chatTitle = LocalizedString(it: "Chat con A.I.D.A.", en: "Chat with A.I.D.A.")
     static let chatPlaceholder = LocalizedString(

@@ -7,6 +7,7 @@ final class CallViewController: UIViewController {
     private let subtitleLabel = UILabel()
     private let answerButton = UIButton(type: .system)
     private let chatButton = UIButton(type: .system)
+    private let testButton = UIButton(type: .system)
 
     init(viewModel: CallViewModel) {
         self.viewModel = viewModel
@@ -64,7 +65,16 @@ final class CallViewController: UIViewController {
         chatButton.configuration = chatConfig
         chatButton.addTarget(self, action: #selector(didTapChat), for: .touchUpInside)
 
-        let buttonStack = UIStackView(arrangedSubviews: [answerButton, chatButton])
+        var testConfig = UIButton.Configuration.gray()
+        testConfig.title = viewModel.testButtonTitle
+        testConfig.image = UIImage(systemName: "location.fill.viewfinder")
+        testConfig.imagePadding = 8
+        testConfig.cornerStyle = .large
+        testConfig.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 24, bottom: 14, trailing: 24)
+        testButton.configuration = testConfig
+        testButton.addTarget(self, action: #selector(didTapTest), for: .touchUpInside)
+
+        let buttonStack = UIStackView(arrangedSubviews: [answerButton, chatButton, testButton])
         buttonStack.axis = .vertical
         buttonStack.spacing = 12
         buttonStack.translatesAutoresizingMaskIntoConstraints = false
@@ -77,7 +87,7 @@ final class CallViewController: UIViewController {
             avatarView.heightAnchor.constraint(equalToConstant: 120),
 
             headerStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            headerStack.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -60),
+            headerStack.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -80),
             headerStack.leadingAnchor.constraint(greaterThanOrEqualTo: view.layoutMarginsGuide.leadingAnchor),
             headerStack.trailingAnchor.constraint(lessThanOrEqualTo: view.layoutMarginsGuide.trailingAnchor),
 
@@ -93,5 +103,9 @@ final class CallViewController: UIViewController {
 
     @objc private func didTapChat() {
         viewModel.preferChat()
+    }
+
+    @objc private func didTapTest() {
+        viewModel.tapTest()
     }
 }
