@@ -53,6 +53,9 @@ final class SpeechService: NSObject {
     private let synthesizer = AVSpeechSynthesizer()
     private var voiceCache: [String: AVSpeechSynthesisVoice] = [:]
 
+    /// FIFO of texts waiting to be spoken when the queue API is used.
+    private var pendingTexts: [String] = []
+
     override init() {
         super.init()
         synthesizer.delegate = self
@@ -77,6 +80,53 @@ final class SpeechService: NSObject {
         utterance.voice = resolveVoice(for: LocalizationManager.shared.currentLanguage)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
         synthesizer.speak(utterance)
+    }
+
+    /// Adds text to the speak queue. Utterances are spoken strictly in order,
+    /// one after another (advanced from the synthesizer's didFinish delegate),
+    /// so they never overlap. Use this instead of `speak(_:)` for a call.
+    func enqueue(_ text: String) {
+        // Split into sentences so each ends with a short pause (a longer beat
+        // after periods than the synthesizer's default).
+        pendingTexts.append(contentsOf: Self.splitIntoSentences(text))
+        if state == .idle, !synthesizer.isSpeaking {
+            speakNext()
+        }
+    }
+
+    /// Clears the pending queue and stops any current utterance.
+    func flushQueue() {
+        pendingTexts.removeAll()
+        synthesizer.stopSpeaking(at: .immediate)
+    }
+
+    private func speakNext() {
+        guard !pendingTexts.isEmpty else { return }
+        let text = pendingTexts.removeFirst()
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = resolveVoice(for: LocalizationManager.shared.currentLanguage)
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+        // Extra silence after each sentence so periods land with a beat.
+        utterance.postUtteranceDelay = 0.45
+        synthesizer.speak(utterance)
+    }
+
+    /// Splits text into sentences, keeping the trailing punctuation. Falls back
+    /// to the whole string if no sentence terminators are present.
+    private static func splitIntoSentences(_ text: String) -> [String] {
+        var sentences: [String] = []
+        var current = ""
+        for character in text {
+            current.append(character)
+            if character == "." || character == "!" || character == "?" || character == "…" {
+                let trimmed = current.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty { sentences.append(trimmed) }
+                current = ""
+            }
+        }
+        let trailing = current.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trailing.isEmpty { sentences.append(trailing) }
+        return sentences.isEmpty ? [text] : sentences
     }
 
     func pause() {
@@ -126,8 +176,13 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        state = .idle
-        delegate?.speechServiceDidFinish(self)
+        if !pendingTexts.isEmpty {
+            // Advance the queue: keep "speaking" without an idle flicker.
+            speakNext()
+        } else {
+            state = .idle
+            delegate?.speechServiceDidFinish(self)
+        }
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {

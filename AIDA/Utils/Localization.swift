@@ -105,6 +105,8 @@ enum L10n {
     static let setupGroupMode = LocalizedString(it: "Modalità gruppo", en: "Group mode")
     static let setupGroupMinAgePlaceholder = LocalizedString(it: "Età minima", en: "Min age")
     static let setupGroupMaxAgePlaceholder = LocalizedString(it: "Età massima", en: "Max age")
+    static let setupAgeFieldHint = LocalizedString(it: "es. 10", en: "e.g. 10")
+    static let keyboardDone = LocalizedString(it: "Fatto", en: "Done")
 
     static let setupSectionDuration = LocalizedString(it: "Durata", en: "Duration")
     static let setupDurationFormat = LocalizedString(it: "~ %d min", en: "~ %d min")
@@ -236,4 +238,49 @@ enum L10n {
     static let chatAgentReply = LocalizedString(
         it: "Ricevuto. Resta in attesa di istruzioni…",
         en: "Got it. Stand by for instructions…")
+
+    // MARK: - Active call
+
+    static let activeCallStatusConnecting = LocalizedString(it: "Connessione…", en: "Connecting…")
+    static let activeCallStatusSpeaking = LocalizedString(it: "Sta parlando…", en: "Speaking…")
+    static let activeCallStatusListening = LocalizedString(it: "In linea", en: "On the line")
+    static let activeCallSpeaker = LocalizedString(it: "Altoparlante", en: "Speaker")
+    static let activeCallMute = LocalizedString(it: "Muto", en: "Mute")
+    static let activeCallHangUp = LocalizedString(it: "Riaggancia", en: "Hang up")
+    static let activeCallMinimize = LocalizedString(it: "Riduci", en: "Minimize")
+    static let activeCallReturnBanner = LocalizedString(
+        it: "Tocca per tornare alla chiamata",
+        en: "Tap to return to call")
+    static let activeCallRecallBanner = LocalizedString(
+        it: "Tocca per richiamare A.I.D.A.",
+        en: "Tap to call A.I.D.A. again")
+
+    static let abandonMissionTitle = LocalizedString(
+        it: "Abbandonare la missione?",
+        en: "Abandon the mission?")
+    static let abandonMissionMessage = LocalizedString(
+        it: "Se esci ora, la chiamata terminerà e la missione verrà interrotta.",
+        en: "If you leave now, the call will end and the mission will be interrupted.")
+    static let abandonMissionConfirm = LocalizedString(it: "Abbandona", en: "Abandon")
+    static let abandonMissionCancel = LocalizedString(it: "Annulla", en: "Cancel")
+
+    /// Scripted agent lines spoken + shown as chat bubbles during the simulated call.
+    /// Swappable: replace this source with a live API stream later.
+    static let activeCallScript: [LocalizedString] = [
+        LocalizedString(
+            it: "Agente, mi senti? Bene. Da questo momento sarò la tua guida sul campo.",
+            en: "Agent, can you hear me? Good. From now on I'll be your guide in the field."),
+        LocalizedString(
+            it: "La tua missione è già iniziata. Tieni il telefono con te e segui le mie istruzioni.",
+            en: "Your mission has already begun. Keep your phone with you and follow my instructions."),
+        LocalizedString(
+            it: "Dirigiti verso la zona che hai selezionato. Ti avviserò quando sarai vicino al primo punto.",
+            en: "Head toward the area you selected. I'll alert you when you're near the first checkpoint."),
+        LocalizedString(
+            it: "Resta vigile. Osserva ciò che ti circonda e non dare nulla per scontato.",
+            en: "Stay alert. Observe your surroundings and take nothing for granted."),
+        LocalizedString(
+            it: "Se hai bisogno di me, sono qui. Buona fortuna, agente.",
+            en: "If you need me, I'm here. Good luck, agent.")
+    ]
 }

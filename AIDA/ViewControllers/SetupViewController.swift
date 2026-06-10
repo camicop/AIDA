@@ -40,6 +40,9 @@ final class SetupViewController: UIViewController {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.keyboardDismissMode = .interactive
+        let dismissTap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        dismissTap.cancelsTouchesInView = false
+        tableView.addGestureRecognizer(dismissTap)
         tableView.register(AgeFieldCell.self, forCellReuseIdentifier: AgeFieldCell.reuseID)
         tableView.register(ToggleCell.self, forCellReuseIdentifier: ToggleCell.reuseID)
         tableView.register(DurationSliderCell.self, forCellReuseIdentifier: DurationSliderCell.reuseID)
@@ -77,6 +80,10 @@ final class SetupViewController: UIViewController {
     @objc private func didTapStart() {
         view.endEditing(true)
         viewModel.confirmStart()
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
 
     private func ageRows() -> [AgeRow] {
@@ -166,7 +173,7 @@ extension SetupViewController: UITableViewDataSource, UITableViewDelegate {
         switch row {
         case .singleAge:
             let cell = tableView.dequeueReusableCell(withIdentifier: AgeFieldCell.reuseID, for: indexPath) as! AgeFieldCell
-            cell.configure(placeholder: viewModel.singleAgePlaceholder, value: viewModel.singleAge) { [weak self] text in
+            cell.configure(title: viewModel.singleAgePlaceholder, value: viewModel.singleAge) { [weak self] text in
                 self?.viewModel.setSingleAge(text)
             }
             return cell
@@ -178,13 +185,13 @@ extension SetupViewController: UITableViewDataSource, UITableViewDelegate {
             return cell
         case .minAge:
             let cell = tableView.dequeueReusableCell(withIdentifier: AgeFieldCell.reuseID, for: indexPath) as! AgeFieldCell
-            cell.configure(placeholder: viewModel.minAgePlaceholder, value: viewModel.minAge) { [weak self] text in
+            cell.configure(title: viewModel.minAgePlaceholder, value: viewModel.minAge) { [weak self] text in
                 self?.viewModel.setMinAge(text)
             }
             return cell
         case .maxAge:
             let cell = tableView.dequeueReusableCell(withIdentifier: AgeFieldCell.reuseID, for: indexPath) as! AgeFieldCell
-            cell.configure(placeholder: viewModel.maxAgePlaceholder, value: viewModel.maxAge) { [weak self] text in
+            cell.configure(title: viewModel.maxAgePlaceholder, value: viewModel.maxAge) { [weak self] text in
                 self?.viewModel.setMaxAge(text)
             }
             return cell
@@ -224,9 +231,10 @@ extension SetupViewController: SetupViewModelBinding {
 
 // MARK: - Cells
 
-private final class AgeFieldCell: UITableViewCell, UITextFieldDelegate {
+private final class AgeFieldCell: UITableViewCell {
     static let reuseID = "AgeFieldCell"
 
+    private let titleLabel = UILabel()
     private let field = UITextField()
     private var onChange: ((String?) -> Void)?
 
@@ -241,29 +249,58 @@ private final class AgeFieldCell: UITableViewCell, UITextFieldDelegate {
 
     private func setupViews() {
         selectionStyle = .none
+
+        titleLabel.font = .systemFont(ofSize: 17)
+        titleLabel.numberOfLines = 0
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+
         field.keyboardType = .numberPad
         field.font = .systemFont(ofSize: 17)
+        field.borderStyle = .roundedRect
+        field.textAlignment = .center
+        field.placeholder = L10n.setupAgeFieldHint.current
         field.translatesAutoresizingMaskIntoConstraints = false
-        field.delegate = self
+        field.setContentHuggingPriority(.required, for: .horizontal)
+        field.setContentCompressionResistancePriority(.required, for: .horizontal)
         field.addTarget(self, action: #selector(editingChanged), for: .editingChanged)
+        field.inputAccessoryView = makeDoneToolbar()
+
+        contentView.addSubview(titleLabel)
         contentView.addSubview(field)
 
         NSLayoutConstraint.activate([
-            field.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: field.leadingAnchor, constant: -12),
+
             field.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
-            field.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
-            field.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12)
+            field.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            field.widthAnchor.constraint(greaterThanOrEqualToConstant: 90)
         ])
     }
 
-    func configure(placeholder: String, value: Int?, onChange: @escaping (String?) -> Void) {
-        field.placeholder = placeholder
+    private func makeDoneToolbar() -> UIToolbar {
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let done = UIBarButtonItem(title: L10n.keyboardDone.current, style: .done, target: self, action: #selector(dismissKeyboard))
+        toolbar.items = [spacer, done]
+        return toolbar
+    }
+
+    func configure(title: String, value: Int?, onChange: @escaping (String?) -> Void) {
+        titleLabel.text = title
         field.text = value.map { String($0) } ?? ""
         self.onChange = onChange
     }
 
     @objc private func editingChanged() {
         onChange?(field.text)
+    }
+
+    @objc private func dismissKeyboard() {
+        field.resignFirstResponder()
     }
 }
 

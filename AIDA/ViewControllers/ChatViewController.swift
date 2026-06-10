@@ -2,11 +2,26 @@ import UIKit
 
 final class ChatViewController: UIViewController {
     private let viewModel: ChatViewModel
+    /// When set, replaces the system back button with a custom one that runs
+    /// this handler instead of popping (used to confirm abandoning the mission).
+    var onBack: (() -> Void)?
+    /// Tapped on the green banner (return to a running call) or the top-right
+    /// button (call again after the call has ended).
+    var onReturnToCall: (() -> Void)?
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let inputContainer = UIView()
     private let textField = UITextField()
     private let sendButton = UIButton(type: .system)
+    private let callBanner = UIButton(type: .system)
+    private var callBannerHeight: NSLayoutConstraint!
     private var inputBottomConstraint: NSLayoutConstraint!
+
+    private lazy var returnCallButton = UIBarButtonItem(
+        image: UIImage(systemName: "phone.fill"),
+        style: .plain,
+        target: self,
+        action: #selector(didTapReturnToCall)
+    )
 
     init(viewModel: ChatViewModel) {
         self.viewModel = viewModel
@@ -25,9 +40,65 @@ final class ChatViewController: UIViewController {
         setupViews()
         observeKeyboard()
         enableDeveloperModeAccess()
+        setupNavigationButtons()
+    }
+
+    private func setupNavigationButtons() {
+        if onBack != nil {
+            navigationItem.hidesBackButton = true
+            navigationItem.leftBarButtonItem = UIBarButtonItem(
+                image: UIImage(systemName: "chevron.left"),
+                style: .plain,
+                target: self,
+                action: #selector(didTapBack)
+            )
+        }
+        returnCallButton.accessibilityLabel = L10n.activeCallRecallBanner.current
+    }
+
+    @objc private func didTapBack() {
+        onBack?()
+    }
+
+    @objc private func didTapReturnToCall() {
+        onReturnToCall?()
+    }
+
+    // MARK: - Return-to-call affordances
+
+    /// Green banner pinned to the top, shown while a call is minimized.
+    func setCallBannerVisible(_ visible: Bool) {
+        guard callBanner.isHidden == visible else { return }
+        callBanner.isHidden = !visible
+        callBannerHeight.constant = visible ? 44 : 0
+        view.layoutIfNeeded()
+    }
+
+    func setCallBannerText(_ text: String) {
+        var title = AttributedString(text)
+        title.font = .systemFont(ofSize: 15, weight: .semibold)
+        title.foregroundColor = .white
+        callBanner.configuration?.attributedTitle = title
+    }
+
+    /// Small top-right button, shown only when not in a call (to call again).
+    func setReturnButtonVisible(_ visible: Bool) {
+        navigationItem.rightBarButtonItem = visible ? returnCallButton : nil
     }
 
     private func setupViews() {
+        var bannerConfig = UIButton.Configuration.filled()
+        bannerConfig.baseBackgroundColor = .systemGreen
+        bannerConfig.baseForegroundColor = .white
+        bannerConfig.image = UIImage(systemName: "phone.fill")
+        bannerConfig.imagePadding = 8
+        bannerConfig.cornerStyle = .fixed
+        callBanner.configuration = bannerConfig
+        callBanner.isHidden = true
+        callBanner.translatesAutoresizingMaskIntoConstraints = false
+        callBanner.addTarget(self, action: #selector(didTapReturnToCall), for: .touchUpInside)
+        view.addSubview(callBanner)
+
         tableView.dataSource = self
         tableView.delegate = self
         tableView.separatorStyle = .none
@@ -60,9 +131,15 @@ final class ChatViewController: UIViewController {
         inputContainer.addSubview(sendButton)
 
         inputBottomConstraint = inputContainer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+        callBannerHeight = callBanner.heightAnchor.constraint(equalToConstant: 0)
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            callBanner.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            callBanner.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            callBanner.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            callBannerHeight,
+
+            tableView.topAnchor.constraint(equalTo: callBanner.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: inputContainer.topAnchor),

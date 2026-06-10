@@ -4,6 +4,7 @@ final class AppCoordinator {
     private let navigationController: UINavigationController
 
     private weak var pendingSetupViewModel: SetupViewModel?
+    private var callCoordinator: CallCoordinator?
 
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
@@ -70,9 +71,12 @@ extension AppCoordinator: BriefingViewModelDelegate {
 
 extension AppCoordinator: CallViewModelDelegate {
     func callDidAnswer(_ viewModel: CallViewModel) {
-        let audioVM = AudioNavigationViewModel()
-        let vc = AudioNavigationViewController(viewModel: audioVM)
-        navigationController.pushViewController(vc, animated: true)
+        // Start the simulated call: chat as the base screen with the full call
+        // presented over it. (AudioNavigation is intentionally left unwired here.)
+        let coordinator = CallCoordinator(navigationController: navigationController)
+        coordinator.onFinished = { [weak self] in self?.callCoordinator = nil }
+        callCoordinator = coordinator
+        coordinator.start()
     }
 
     func callDidPreferChat(_ viewModel: CallViewModel) {

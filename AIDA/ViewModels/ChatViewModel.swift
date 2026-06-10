@@ -21,6 +21,15 @@ final class ChatViewModel {
         self.agentReplyText = L10n.chatAgentReply.current
     }
 
+    /// Appends an agent message originating from the call layer (scripted or live)
+    /// so it appears as a chat bubble in sync with the spoken voice.
+    func appendAgentMessage(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        messages.append(ChatMessage(sender: .agent, text: trimmed))
+        delegate?.chatViewModelDidUpdateMessages(self)
+    }
+
     func sendUserMessage(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
