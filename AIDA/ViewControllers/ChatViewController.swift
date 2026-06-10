@@ -24,6 +24,7 @@ final class ChatViewController: UIViewController {
         viewModel.delegate = self
         setupViews()
         observeKeyboard()
+        enableDeveloperModeAccess()
     }
 
     private func setupViews() {

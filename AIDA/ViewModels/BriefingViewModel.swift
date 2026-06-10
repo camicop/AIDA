@@ -47,7 +47,7 @@ final class BriefingViewModel {
 
     init(mission: Mission) {
         self.mission = mission
-        self.briefingText = L10n.briefingText.current
+        self.briefingText = mission.briefing.current
         speechService.delegate = self
     }
 

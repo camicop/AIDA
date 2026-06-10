@@ -10,6 +10,8 @@
 	<string>A.I.D.A. usa la fotocamera per catturare indizi e momenti della missione.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>A.I.D.A. legge i dati di salute per adattare il ritmo della missione al tuo stato di forma.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>A.I.D.A. usa i sensori di movimento per misurare la tua cadenza di passo e l'inclinazione durante la missione.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

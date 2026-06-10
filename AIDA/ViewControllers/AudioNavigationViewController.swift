@@ -24,6 +24,7 @@ final class AudioNavigationViewController: UIViewController {
         view.backgroundColor = .black
         viewModel.binding = self
         setupViews()
+        enableDeveloperModeAccess()
     }
 
     override func viewDidAppear(_ animated: Bool) {

@@ -9,7 +9,7 @@ final class HomeViewModel {
 
     var navTitle: String { L10n.appName.current }
     var title: String { L10n.homeTitle.current }
-    var missions: [Mission] { Mission.localizedPlaceholders }
+    var missions: [Mission] { Mission.catalog }
 
     var currentLanguage: Language {
         get { LocalizationManager.shared.currentLanguage }

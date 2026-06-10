@@ -1,0 +1,49 @@
+import CoreLocation
+
+final class DeveloperViewModel {
+    var screenTitle: String { L10n.developerTitle.current }
+    var closeTitle: String { L10n.developerClose.current }
+    var emptyMessage: String { L10n.developerNoMission.current }
+    var exportTitle: String { L10n.developerExport.current }
+    var speedLabel: String { L10n.developerStatSpeed.current }
+    var cadenceLabel: String { L10n.developerStatCadence.current }
+    var pitchLabel: String { L10n.developerStatPitch.current }
+    var placeholder: String { L10n.developerStatPlaceholder.current }
+    var acquiringMessage: String { L10n.developerAcquiringGPS.current }
+
+    var isRecording: Bool { SessionRecorder.shared.isRecording }
+    var isAcquiringGPSFix: Bool { SessionRecorder.shared.isAcquiringGPSFix }
+
+    var trackCoordinates: [CLLocationCoordinate2D] {
+        SessionRecorder.shared.dataPoints.map {
+            CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+        }
+    }
+
+    var currentLocation: CLLocation? { SessionRecorder.shared.currentLocation }
+
+    var speedDisplay: String {
+        if let speed = SessionRecorder.shared.dataPoints.last?.speedMS {
+            return String(format: "%.2f", speed)
+        }
+        return placeholder
+    }
+
+    var cadenceDisplay: String {
+        if let cadence = SessionRecorder.shared.currentCadence {
+            return String(format: "%.0f", cadence)
+        }
+        return placeholder
+    }
+
+    var pitchDisplay: String {
+        if let pitch = SessionRecorder.shared.currentPitch {
+            return String(format: "%.1f", pitch)
+        }
+        return placeholder
+    }
+
+    func exportCSV() -> URL? {
+        SessionRecorder.shared.exportCSV()
+    }
+}

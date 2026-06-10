@@ -3,6 +3,8 @@ import UIKit
 final class AppCoordinator {
     private let navigationController: UINavigationController
 
+    private weak var pendingSetupViewModel: SetupViewModel?
+
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
     }
@@ -17,19 +19,43 @@ final class AppCoordinator {
 
 extension AppCoordinator: HomeViewModelDelegate {
     func homeViewModel(_ viewModel: HomeViewModel, didSelect mission: Mission) {
-        let onboardingVM = OnboardingPermissionsViewModel(mission: mission)
-        onboardingVM.delegate = self
-        let vc = OnboardingPermissionsViewController(viewModel: onboardingVM)
+        let setupVM = SetupViewModel(mission: mission)
+        setupVM.delegate = self
+        let vc = SetupViewController(viewModel: setupVM)
         navigationController.pushViewController(vc, animated: true)
     }
 }
 
-extension AppCoordinator: OnboardingPermissionsViewModelDelegate {
-    func onboardingDidComplete(_ viewModel: OnboardingPermissionsViewModel) {
+extension AppCoordinator: SetupViewModelDelegate {
+    func setupViewModelDidRequestZoneSelection(_ viewModel: SetupViewModel) {
+        pendingSetupViewModel = viewModel
+        let mapVM = MapViewModel(initialArea: viewModel.selectedArea)
+        mapVM.delegate = self
+        let mapVC = MapViewController(viewModel: mapVM)
+        let nav = UINavigationController(rootViewController: mapVC)
+        nav.modalPresentationStyle = .fullScreen
+        navigationController.present(nav, animated: true)
+    }
+
+    func setupViewModel(_ viewModel: SetupViewModel, didConfirm configuration: MissionConfiguration) {
+        SessionRecorder.shared.startRecording()
+        SessionRecorder.shared.logEvent("MISSION_START")
         let briefingVM = BriefingViewModel(mission: viewModel.mission)
         briefingVM.delegate = self
         let vc = BriefingViewController(viewModel: briefingVM)
         navigationController.pushViewController(vc, animated: true)
+    }
+}
+
+extension AppCoordinator: MapViewModelDelegate {
+    func mapViewModel(_ viewModel: MapViewModel, didConfirm area: MissionArea) {
+        navigationController.dismiss(animated: true) { [weak self] in
+            self?.pendingSetupViewModel?.setSelectedArea(area)
+        }
+    }
+
+    func mapViewModelDidCancel(_ viewModel: MapViewModel) {
+        navigationController.dismiss(animated: true)
     }
 }
 

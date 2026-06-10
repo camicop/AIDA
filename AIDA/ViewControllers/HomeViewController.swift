@@ -20,6 +20,12 @@ final class HomeViewController: UIViewController {
         view.backgroundColor = Theme.background
         setupViews()
         applyLocalizedContent()
+        enableDeveloperModeAccess()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        SessionRecorder.shared.stopRecording()
     }
 
     private func setupViews() {
@@ -47,9 +53,11 @@ final class HomeViewController: UIViewController {
 
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.register(MissionCardCell.self, forCellReuseIdentifier: MissionCardCell.reuseID)
+        tableView.separatorStyle = .none
+        tableView.backgroundColor = .clear
+        tableView.register(StoryCardCell.self, forCellReuseIdentifier: StoryCardCell.reuseID)
         tableView.rowHeight = UITableView.automaticDimension
-        tableView.estimatedRowHeight = 120
+        tableView.estimatedRowHeight = 160
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
 
@@ -85,7 +93,7 @@ extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: MissionCardCell.reuseID, for: indexPath) as! MissionCardCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: StoryCardCell.reuseID, for: indexPath) as! StoryCardCell
         cell.configure(with: viewModel.missions[indexPath.row])
         return cell
     }
@@ -96,9 +104,11 @@ extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
     }
 }
 
-private final class MissionCardCell: UITableViewCell {
-    static let reuseID = "MissionCardCell"
+private final class StoryCardCell: UITableViewCell {
+    static let reuseID = "StoryCardCell"
 
+    private let card = GradientCardView()
+    private let iconView = UIImageView()
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
     private let durationLabel = UILabel()
@@ -113,32 +123,88 @@ private final class MissionCardCell: UITableViewCell {
     }
 
     private func setupViews() {
-        accessoryType = .disclosureIndicator
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+        selectionStyle = .none
 
-        titleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
+        card.layer.cornerRadius = 20
+        card.layer.cornerCurve = .continuous
+        card.clipsToBounds = true
+        card.translatesAutoresizingMaskIntoConstraints = false
+
+        iconView.contentMode = .scaleAspectFit
+        iconView.tintColor = .white
+        iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 30, weight: .semibold)
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+
+        titleLabel.font = .systemFont(ofSize: 22, weight: .bold)
+        titleLabel.textColor = .white
+        titleLabel.numberOfLines = 2
+
         subtitleLabel.font = .systemFont(ofSize: 14)
-        subtitleLabel.textColor = Theme.secondaryText
-        subtitleLabel.numberOfLines = 0
-        durationLabel.font = .systemFont(ofSize: 12, weight: .medium)
-        durationLabel.textColor = Theme.accent
+        subtitleLabel.textColor = UIColor.white.withAlphaComponent(0.85)
+        subtitleLabel.numberOfLines = 2
 
-        let stack = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel, durationLabel])
-        stack.axis = .vertical
-        stack.spacing = 4
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(stack)
+        durationLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+        durationLabel.textColor = UIColor.white.withAlphaComponent(0.9)
+
+        let textStack = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel, durationLabel])
+        textStack.axis = .vertical
+        textStack.spacing = 6
+        textStack.setCustomSpacing(10, after: subtitleLabel)
+        textStack.translatesAutoresizingMaskIntoConstraints = false
+
+        contentView.addSubview(card)
+        card.addSubview(iconView)
+        card.addSubview(textStack)
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
-            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
-            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12)
+            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
+            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 6),
+            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -6),
+            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
+
+            iconView.topAnchor.constraint(equalTo: card.topAnchor, constant: 18),
+            iconView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 18),
+            iconView.widthAnchor.constraint(equalToConstant: 44),
+            iconView.heightAnchor.constraint(equalToConstant: 44),
+
+            textStack.topAnchor.constraint(equalTo: iconView.bottomAnchor, constant: 14),
+            textStack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 18),
+            textStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -18),
+            textStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -18)
         ])
     }
 
     func configure(with mission: Mission) {
-        titleLabel.text = mission.title
-        subtitleLabel.text = mission.subtitle
-        durationLabel.text = "≈ \(mission.estimatedDuration)"
+        iconView.image = UIImage(systemName: mission.iconName)
+        titleLabel.text = mission.title.current
+        subtitleLabel.text = mission.subtitle.current
+        durationLabel.text = mission.estimatedDuration.current
+        card.apply(top: mission.accentTop, bottom: mission.accentBottom)
+    }
+}
+
+private final class GradientCardView: UIView {
+    private let gradientLayer = CAGradientLayer()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        gradientLayer.startPoint = CGPoint(x: 0.0, y: 0.0)
+        gradientLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
+        layer.insertSublayer(gradientLayer, at: 0)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        gradientLayer.frame = bounds
+    }
+
+    func apply(top: UIColor, bottom: UIColor) {
+        gradientLayer.colors = [top.cgColor, bottom.cgColor]
     }
 }

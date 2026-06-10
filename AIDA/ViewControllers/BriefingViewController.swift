@@ -26,6 +26,7 @@ final class BriefingViewController: UIViewController {
         setupGestures()
         renderAttributedText()
         updateSpeakButton()
+        enableDeveloperModeAccess()
     }
 
     private func setupViews() {

@@ -23,6 +23,7 @@ final class CallViewController: UIViewController {
         view.backgroundColor = Theme.background
         navigationItem.hidesBackButton = true
         setupViews()
+        enableDeveloperModeAccess()
     }
 
     private func setupViews() {
