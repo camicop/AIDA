@@ -12,6 +12,10 @@ final class ChatViewModel {
 
     private let agentReplyText: String
 
+    /// When set, typed user messages are offered here first. If it returns true
+    /// the message was consumed (e.g. as a call answer) and no canned reply runs.
+    var userMessageInterceptor: ((String) -> Bool)?
+
     private(set) var messages: [ChatMessage]
 
     init() {
@@ -30,11 +34,24 @@ final class ChatViewModel {
         delegate?.chatViewModelDidUpdateMessages(self)
     }
 
+    /// Appends a user message originating from the call layer (e.g. a spoken
+    /// answer transcribed to text), without triggering the canned reply.
+    func appendUserMessage(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        messages.append(ChatMessage(sender: .user, text: trimmed))
+        delegate?.chatViewModelDidUpdateMessages(self)
+    }
+
     func sendUserMessage(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         messages.append(ChatMessage(sender: .user, text: trimmed))
         delegate?.chatViewModelDidUpdateMessages(self)
+
+        // Let the call layer claim this as an answer before falling back to the
+        // canned reply.
+        if userMessageInterceptor?(trimmed) == true { return }
 
         Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(800))

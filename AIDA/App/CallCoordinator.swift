@@ -25,19 +25,49 @@ final class CallCoordinator: NSObject {
     }
 
     private static func makeSession(chatViewModel: ChatViewModel) -> CallSession {
-        let lines = L10n.activeCallScript.map { $0.current }
+        // Opens by asking the user to confirm they can hear, then continues the
+        // briefing once an affirmative answer arrives.
+        var steps: [AgentScriptStep] = [
+            .ask(
+                question: L10n.activeCallQuestionHearMe.current,
+                retry: L10n.activeCallRetryHearMe.current,
+                accept: { isAffirmative($0) }
+            )
+        ]
+        steps += L10n.activeCallScript.map { .say($0.current) }
         let source = ScriptedAgentMessageSource(
-            lines: lines,
+            steps: steps,
             firstDelay: 2.0,
-            interMessageDelay: 8.0
+            interMessageDelay: 6.0,
+            postAnswerDelay: 1.0
         )
         return CallSession(chatViewModel: chatViewModel, messageSource: source)
+    }
+
+    /// Lenient yes-detection in the current language; anything else counts as "no".
+    private static func isAffirmative(_ text: String) -> Bool {
+        let normalized = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return false }
+        let affirmatives: [String]
+        switch LocalizationManager.shared.currentLanguage {
+        case .italian:
+            affirmatives = ["sì", "si", "certo", "ti sento", "affermativo", "perfetto", "ok"]
+        case .english:
+            affirmatives = ["yes", "yeah", "yep", "yup", "i can", "hear you", "affirmative", "ok", "okay"]
+        }
+        return affirmatives.contains { normalized.contains($0) }
     }
 
     func start() {
         let chat = ChatViewController(viewModel: chatViewModel)
         chat.onBack = { [weak self] in self?.confirmAbandon() }
         chat.onReturnToCall = { [weak self] in self?.handleBannerTapped() }
+        // Typed messages double as answers while the agent is awaiting one.
+        chatViewModel.userMessageInterceptor = { [weak self] text in
+            guard let self, self.session.isAwaitingAnswer else { return false }
+            self.session.submitTypedAnswer(text)
+            return true
+        }
         chatVC = chat
         // Replace the one-time incoming-call screen (currently top of the stack)
         // with the chat, so it never reappears when the user navigates back.
@@ -131,6 +161,7 @@ extension CallCoordinator: CallSessionDelegate {
     func callSessionDidTick(_ session: CallSession) { refresh() }
     func callSessionDidChangeSpeaking(_ session: CallSession) { refresh() }
     func callSessionDidChangeControls(_ session: CallSession) { refresh() }
+    func callSessionDidChangeInteraction(_ session: CallSession) { refresh() }
 
     func callSessionDidEnd(_ session: CallSession) {
         // Stop the call UI but keep the chat visible and scrollable underneath.

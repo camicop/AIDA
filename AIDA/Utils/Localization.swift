@@ -254,6 +254,18 @@ enum L10n {
     static let activeCallRecallBanner = LocalizedString(
         it: "Tocca per richiamare A.I.D.A.",
         en: "Tap to call A.I.D.A. again")
+    static let activeCallTapToAnswer = LocalizedString(
+        it: "Tocca per rispondere",
+        en: "Tap to answer")
+    static let activeCallListening = LocalizedString(it: "Sto ascoltando…", en: "Listening…")
+
+    /// Interactive opening: the agent asks if it can be heard and waits for a reply.
+    static let activeCallQuestionHearMe = LocalizedString(
+        it: "Agente, mi senti?",
+        en: "Agent, can you hear me?")
+    static let activeCallRetryHearMe = LocalizedString(
+        it: "Non ti sento. Mi senti adesso?",
+        en: "I can't hear you. Can you hear me now?")
 
     static let abandonMissionTitle = LocalizedString(
         it: "Abbandonare la missione?",
@@ -264,12 +276,13 @@ enum L10n {
     static let abandonMissionConfirm = LocalizedString(it: "Abbandona", en: "Abandon")
     static let abandonMissionCancel = LocalizedString(it: "Annulla", en: "Cancel")
 
-    /// Scripted agent lines spoken + shown as chat bubbles during the simulated call.
+    /// Agent lines spoken + shown as chat bubbles after the user confirms they can
+    /// hear (the opening question lives in activeCallQuestionHearMe).
     /// Swappable: replace this source with a live API stream later.
     static let activeCallScript: [LocalizedString] = [
         LocalizedString(
-            it: "Agente, mi senti? Bene. Da questo momento sarò la tua guida sul campo.",
-            en: "Agent, can you hear me? Good. From now on I'll be your guide in the field."),
+            it: "Perfetto. Da questo momento sarò la tua guida sul campo.",
+            en: "Perfect. From now on I'll be your guide in the field."),
         LocalizedString(
             it: "La tua missione è già iniziata. Tieni il telefono con te e segui le mie istruzioni.",
             en: "Your mission has already begun. Keep your phone with you and follow my instructions."),

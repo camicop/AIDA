@@ -11,6 +11,8 @@ final class ActiveCallViewController: UIViewController {
     private let statusLabel = UILabel()
     private let timerLabel = UILabel()
     private let waveform = WaveformIndicatorView(barCount: 5)
+    private let answerLabel = UILabel()
+    private let micButton = UIButton(type: .system)
 
     private let muteButton = UIButton(type: .system)
     private let speakerButton = UIButton(type: .system)
@@ -62,6 +64,25 @@ final class ActiveCallViewController: UIViewController {
 
         waveform.translatesAutoresizingMaskIntoConstraints = false
 
+        answerLabel.font = .systemFont(ofSize: 16, weight: .medium)
+        answerLabel.textColor = Theme.primaryText
+        answerLabel.textAlignment = .center
+        answerLabel.numberOfLines = 0
+        answerLabel.isHidden = true
+        answerLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        var micConfig = UIButton.Configuration.filled()
+        micConfig.image = UIImage(systemName: "mic.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 28))
+        micConfig.baseForegroundColor = .white
+        micConfig.baseBackgroundColor = Theme.accent
+        micConfig.cornerStyle = .capsule
+        micConfig.contentInsets = NSDirectionalEdgeInsets(top: 22, leading: 22, bottom: 22, trailing: 22)
+        micButton.configuration = micConfig
+        micButton.translatesAutoresizingMaskIntoConstraints = false
+        micButton.addTarget(self, action: #selector(didTapMic), for: .touchUpInside)
+        micButton.widthAnchor.constraint(equalToConstant: 76).isActive = true
+        micButton.heightAnchor.constraint(equalToConstant: 76).isActive = true
+
         configureControl(muteButton, systemImage: "mic.slash.fill", tint: Theme.primaryText, background: Theme.cardBackground)
         muteButton.addTarget(self, action: #selector(didTapMute), for: .touchUpInside)
 
@@ -87,6 +108,8 @@ final class ActiveCallViewController: UIViewController {
         view.addSubview(minimizeButton)
         view.addSubview(headerStack)
         view.addSubview(waveform)
+        view.addSubview(answerLabel)
+        view.addSubview(micButton)
         view.addSubview(controlsStack)
 
         NSLayoutConstraint.activate([
@@ -102,9 +125,16 @@ final class ActiveCallViewController: UIViewController {
             headerStack.trailingAnchor.constraint(lessThanOrEqualTo: view.layoutMarginsGuide.trailingAnchor),
 
             waveform.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            waveform.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 40),
+            waveform.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 10),
             waveform.heightAnchor.constraint(equalToConstant: 44),
             waveform.widthAnchor.constraint(equalToConstant: 80),
+
+            answerLabel.topAnchor.constraint(equalTo: waveform.bottomAnchor, constant: 28),
+            answerLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+            answerLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+
+            micButton.topAnchor.constraint(equalTo: answerLabel.bottomAnchor, constant: 14),
+            micButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
             controlsStack.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor, constant: 24),
             controlsStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor, constant: -24),
@@ -145,6 +175,50 @@ final class ActiveCallViewController: UIViewController {
         } else {
             waveform.stopAnimating()
         }
+
+        renderAnswerState()
+    }
+
+    private func renderAnswerState() {
+        let listening = session.isListening
+        let awaiting = session.isAwaitingAnswer
+
+        // The mic is always available so the user can speak to the agent anytime;
+        // the label/pulse only call attention when an answer is expected.
+        answerLabel.isHidden = !(listening || awaiting)
+
+        if listening {
+            let transcript = session.partialTranscript
+            answerLabel.text = transcript.isEmpty ? L10n.activeCallListening.current : transcript
+            micButton.configuration?.baseBackgroundColor = .systemRed
+            micButton.configuration?.baseForegroundColor = .white
+            startMicPulse()
+        } else if awaiting {
+            answerLabel.text = L10n.activeCallTapToAnswer.current
+            micButton.configuration?.baseBackgroundColor = Theme.accent
+            micButton.configuration?.baseForegroundColor = .white
+            startMicPulse()
+        } else {
+            micButton.configuration?.baseBackgroundColor = Theme.cardBackground
+            micButton.configuration?.baseForegroundColor = Theme.accent
+            stopMicPulse()
+        }
+    }
+
+    private func startMicPulse() {
+        guard micButton.layer.animation(forKey: "pulse") == nil else { return }
+        let pulse = CABasicAnimation(keyPath: "transform.scale")
+        pulse.fromValue = 1.0
+        pulse.toValue = 1.12
+        pulse.duration = 0.7
+        pulse.autoreverses = true
+        pulse.repeatCount = .infinity
+        pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        micButton.layer.add(pulse, forKey: "pulse")
+    }
+
+    private func stopMicPulse() {
+        micButton.layer.removeAnimation(forKey: "pulse")
     }
 
     // MARK: - Actions
@@ -153,4 +227,5 @@ final class ActiveCallViewController: UIViewController {
     @objc private func didTapSpeaker() { session.toggleSpeaker() }
     @objc private func didTapHangUp() { session.hangUp() }
     @objc private func didTapMinimize() { onMinimize?() }
+    @objc private func didTapMic() { session.startListening() }
 }
