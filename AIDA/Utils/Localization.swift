@@ -296,4 +296,112 @@ enum L10n {
             it: "Se hai bisogno di me, sono qui. Buona fortuna, agente.",
             en: "If you need me, I'm here. Good luck, agent.")
     ]
+
+    // MARK: - Demo mission
+
+    static let demoIntro = LocalizedString(
+        it: "Agente, la missione è iniziata. Il Sigillo del Concilio è nascosto da qualche parte in questa zona. Inizia da qui.",
+        en: "Agent, the mission has begun. The Council Seal is hidden somewhere in this area. Start here.")
+    static let demoCheckpoint1Praise = LocalizedString(
+        it: "Ottimo lavoro, agente. Sei nella zona giusta.",
+        en: "Great work, agent. You're in the right area.")
+    static let demoPhotoInstruction = LocalizedString(
+        it: "Fotografa il dettaglio più antico che riesci a trovare su questa facciata.",
+        en: "Photograph the oldest detail you can find on this façade.")
+    static let demoValidatingClue = LocalizedString(
+        it: "Sto convalidando l'indizio…",
+        en: "Validating clue…")
+    static let demoAnalysisComplete = LocalizedString(
+        it: "Analisi completata. Elemento registrato nel database.",
+        en: "Analysis complete. Element logged in the database.")
+    static let demoPrepareNext = LocalizedString(
+        it: "Preparati per il prossimo obiettivo.",
+        en: "Get ready for the next objective.")
+    static let demoOhNo = LocalizedString(
+        it: "Oh no…",
+        en: "Oh no…")
+    static let demoLosingGPS = LocalizedString(
+        it: "Stiamo perdendo il segnale GPS…",
+        en: "We're losing the GPS signal…")
+    static let demoFollowSignal = LocalizedString(
+        it: "Ma sentiamo un segnale. Prova a seguirlo.",
+        en: "But we're picking up a signal. Try to follow it.")
+    static let demoProximityAcquired = LocalizedString(
+        it: "Segnale acquisito. Ottimo lavoro.",
+        en: "Signal acquired. Great work.")
+    static let demoStatuesPrompt = LocalizedString(
+        it: "Dovresti vedere delle statue davanti a te. Le vedi?",
+        en: "You should see some statues in front of you. Do you see them?")
+    static let demoStatuesRetry = LocalizedString(
+        it: "Guardati bene intorno. Vedi le statue?",
+        en: "Look carefully around you. Do you see the statues?")
+    static let demoYearQuestion = LocalizedString(
+        it: "Tra quelle statue, trova la persona morta più di recente e dimmi l'anno.",
+        en: "Among those statues, find the person who died most recently and tell me the year.")
+    static let demoEnigmaRetry = LocalizedString(
+        it: "Non è la risposta giusta. Riprova.",
+        en: "That's not the right answer. Try again.")
+    static let demoSourcesOffer = LocalizedString(
+        it: "Abbiamo delle fonti, ma ci costeranno dei punti. Vuoi che le chieda?",
+        en: "We have some sources, but they'll cost us some points. Do you want me to request them?")
+    static let demoEnigmaCorrect = LocalizedString(
+        it: "Corretto. 1812 — l'anno dell'ultima grande ristrutturazione.",
+        en: "Correct. 1812 — the year of the last major restoration.")
+    static let demoMissionComplete = LocalizedString(
+        it: "Missione completata. Il Sigillo del Concilio è al sicuro.",
+        en: "Mission complete. The Council Seal is safe.")
+    static let demoWellDone = LocalizedString(
+        it: "Ottimo lavoro sul campo.",
+        en: "Great work in the field.")
+
+    // Mission finalize + report
+    static let finalizeButtonTitle = LocalizedString(
+        it: "Finalizza la missione",
+        en: "Finalize the mission")
+    static let reportTitle = LocalizedString(it: "Report della missione", en: "Mission Report")
+    static let reportSubtitle = LocalizedString(
+        it: "Sigillo del Concilio recuperato",
+        en: "Council Seal recovered")
+    static let reportSummaryHeader = LocalizedString(it: "Punti chiave", en: "Key moments")
+    static let reportPoint1 = LocalizedString(
+        it: "Area del Sigillo individuata",
+        en: "Seal area identified")
+    static let reportPoint2 = LocalizedString(
+        it: "Indizio fotografico acquisito",
+        en: "Photo clue captured")
+    static let reportPoint3 = LocalizedString(
+        it: "Segnale di prossimità recuperato",
+        en: "Proximity signal recovered")
+    static let reportPoint4 = LocalizedString(
+        it: "Enigma delle date risolto (1812)",
+        en: "Date enigma solved (1812)")
+    static let reportPointsLabel = LocalizedString(it: "Punti raccolti", en: "Points collected")
+    static let reportCollectButton = LocalizedString(it: "Raccogli i punti", en: "Collect points")
+
+    // Checkpoint button
+    static let checkpointArrivedButton = LocalizedString(it: "Sono arrivato", en: "I've arrived")
+    static let checkpointArrivedMessage = LocalizedString(it: "Sono arrivato.", en: "I've arrived.")
+
+    // Fake camera
+    static let cameraButtonTitle = LocalizedString(it: "Scatta una foto", en: "Take a photo")
+    static let cameraOverlay = LocalizedString(it: "Inquadra il dettaglio", en: "Frame the detail")
+
+    // Proximity
+    static let proximityTargetFound = LocalizedString(it: "Obiettivo trovato", en: "Target found")
+    static let navigationButtonTitle = LocalizedString(it: "Avvia la navigazione", en: "Start navigation")
+
+    // Hints
+    static let hintVisualTitle = LocalizedString(it: "Indizio visivo", en: "Visual clue")
+    static let hintTextTitle = LocalizedString(it: "Indizio testuale", en: "Text clue")
+    static let hintSolutionTitle = LocalizedString(it: "Soluzione diretta", en: "Direct solution")
+    static let hintPenaltyFormat = LocalizedString(it: "−%d punti", en: "−%d points")
+    static let hintVisualClue = LocalizedString(
+        it: "Il numero è inciso sulla base del monumento più alto della piazza.",
+        en: "The number is carved on the base of the tallest monument in the square.")
+    static let hintTextClue = LocalizedString(
+        it: "Pensa all'epoca napoleonica in Italia settentrionale.",
+        en: "Think of the Napoleonic era in northern Italy.")
+    static let hintSolutionClue = LocalizedString(
+        it: "La risposta è 1812.",
+        en: "The answer is 1812.")
 }

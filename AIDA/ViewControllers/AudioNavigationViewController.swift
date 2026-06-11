@@ -3,9 +3,14 @@ import UIKit
 final class AudioNavigationViewController: UIViewController {
     private let viewModel: AudioNavigationViewModel
 
+    /// When set, a "target found" button is shown and this is called on tap
+    /// (used when the screen is presented as a mission proximity step).
+    var onTargetFound: (() -> Void)?
+
     private let pulseView = UIView()
     private let statusLabel = UILabel()
     private let distanceLabel = UILabel()
+    private let targetFoundButton = UIButton(type: .system)
     private let debugTitleLabel = UILabel()
     private let debugSwitch = UISwitch()
     private let debugSlider = UISlider()
@@ -86,6 +91,25 @@ final class AudioNavigationViewController: UIViewController {
         debugSlider.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(debugSlider)
 
+        if onTargetFound != nil {
+            var config = UIButton.Configuration.filled()
+            config.title = L10n.proximityTargetFound.current
+            config.baseBackgroundColor = Theme.accent
+            config.baseForegroundColor = .white
+            config.cornerStyle = .large
+            config.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 24, bottom: 14, trailing: 24)
+            targetFoundButton.configuration = config
+            targetFoundButton.translatesAutoresizingMaskIntoConstraints = false
+            targetFoundButton.addTarget(self, action: #selector(didTapTargetFound), for: .touchUpInside)
+            view.addSubview(targetFoundButton)
+
+            NSLayoutConstraint.activate([
+                targetFoundButton.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+                targetFoundButton.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+                targetFoundButton.bottomAnchor.constraint(equalTo: switchRow.topAnchor, constant: -24)
+            ])
+        }
+
         NSLayoutConstraint.activate([
             pulseView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             pulseView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -60),
@@ -118,6 +142,10 @@ final class AudioNavigationViewController: UIViewController {
             self.pulseView.transform = CGAffineTransform(scaleX: 1.3, y: 1.3)
             self.pulseView.alpha = 0.4
         })
+    }
+
+    @objc private func didTapTargetFound() {
+        onTargetFound?()
     }
 
     @objc private func debugSwitchChanged() {

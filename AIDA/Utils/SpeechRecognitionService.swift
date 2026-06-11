@@ -17,7 +17,7 @@ final class SpeechRecognitionService: NSObject {
 
     private(set) var isListening = false
 
-    private let audioEngine = AVAudioEngine()
+    private var audioEngine = AVAudioEngine()
     private var recognizer: SFSpeechRecognizer?
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
@@ -50,6 +50,9 @@ final class SpeechRecognitionService: NSObject {
         request.shouldReportPartialResults = true
         self.request = request
 
+        // Use a fresh engine each time so a previously-presented screen that
+        // touched audio can't leave stale state that makes start() throw.
+        audioEngine = AVAudioEngine()
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)

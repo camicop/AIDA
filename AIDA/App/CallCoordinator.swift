@@ -25,18 +25,8 @@ final class CallCoordinator: NSObject {
     }
 
     private static func makeSession(chatViewModel: ChatViewModel) -> CallSession {
-        // Opens by asking the user to confirm they can hear, then continues the
-        // briefing once an affirmative answer arrives.
-        var steps: [AgentScriptStep] = [
-            .ask(
-                question: L10n.activeCallQuestionHearMe.current,
-                retry: L10n.activeCallRetryHearMe.current,
-                accept: { isAffirmative($0) }
-            )
-        ]
-        steps += L10n.activeCallScript.map { .say($0.current) }
         let source = ScriptedAgentMessageSource(
-            steps: steps,
+            steps: demoMissionSteps(),
             firstDelay: 2.0,
             interMessageDelay: 6.0,
             postAnswerDelay: 1.0
@@ -44,24 +34,100 @@ final class CallCoordinator: NSObject {
         return CallSession(chatViewModel: chatViewModel, messageSource: source)
     }
 
-    /// Lenient yes-detection in the current language; anything else counts as "no".
+    /// The hardcoded demo mission: 2 checkpoints, a photo enigma, a proximity
+    /// search, and a multiple-choice enigma with hints.
+    private static func demoMissionSteps() -> [AgentScriptStep] {
+        [
+            // Opening: confirm the user can hear (shows the answer mechanism).
+            .ask(
+                question: L10n.activeCallQuestionHearMe.current,
+                retry: L10n.activeCallRetryHearMe.current,
+                accept: { isAffirmative($0) },
+                help: { _ in false },
+                helpOffer: nil,
+                helpOfferAccept: nil
+            ),
+
+            // Intro
+            .say(L10n.demoIntro.current),
+            .map(bearingDegrees: 0, distanceMeters: 100),
+
+            // Checkpoint 1 — photo enigma
+            .checkpoint(event: "CHECKPOINT_1_REACHED"),
+            .say(L10n.demoCheckpoint1Praise.current),
+            .say(L10n.demoPhotoInstruction.current),
+            .camera,
+            .loading(text: L10n.demoValidatingClue.current, seconds: 2.5),
+            .success(L10n.demoAnalysisComplete.current),
+            .say(L10n.demoPrepareNext.current),
+            .map(bearingDegrees: 0, distanceMeters: 100),
+
+            // Checkpoint 2 — proximity search
+            .checkpoint(event: "CHECKPOINT_2_REACHED"),
+            .say(L10n.demoOhNo.current),
+            .sayQuick(L10n.demoLosingGPS.current),
+            .sayQuick(L10n.demoFollowSignal.current),
+            .proximity(event: "CHECKPOINT_2_PROXIMITY_FOUND",
+                       confirmation: L10n.demoProximityAcquired.current),
+
+            // Checkpoint 2 — statues lead-in, then the date enigma with sources
+            .ask(
+                question: L10n.demoStatuesPrompt.current,
+                retry: L10n.demoStatuesRetry.current,
+                accept: { isAffirmative($0) },
+                help: { _ in false },
+                helpOffer: nil,
+                helpOfferAccept: nil
+            ),
+            .ask(
+                question: L10n.demoYearQuestion.current,
+                retry: L10n.demoEnigmaRetry.current,
+                accept: { isEnigmaCorrect($0) },
+                help: { isHelpRequest($0) },
+                helpOffer: L10n.demoSourcesOffer.current,
+                helpOfferAccept: { isAffirmative($0) }
+            ),
+            .say(L10n.demoEnigmaCorrect.current),
+            .say(L10n.demoMissionComplete.current),
+            .say(L10n.demoWellDone.current),
+            .complete(event: "MISSION_COMPLETED"),
+            .finalize
+        ]
+    }
+
+    /// Lenient yes-detection. Accepts either language so a "yes" / "sì" always
+    /// works regardless of the app's current language.
     private static func isAffirmative(_ text: String) -> Bool {
         let normalized = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalized.isEmpty else { return false }
-        let affirmatives: [String]
-        switch LocalizationManager.shared.currentLanguage {
-        case .italian:
-            affirmatives = ["sì", "si", "certo", "ti sento", "affermativo", "perfetto", "ok"]
-        case .english:
-            affirmatives = ["yes", "yeah", "yep", "yup", "i can", "hear you", "affirmative", "ok", "okay"]
-        }
+        let affirmatives = [
+            "sì", "si", "certo", "ti sento", "affermativo", "perfetto", "va bene",
+            "yes", "yeah", "yep", "yup", "i can", "hear you", "affirmative", "ok", "okay"
+        ]
         return affirmatives.contains { normalized.contains($0) }
+    }
+
+    private static func isEnigmaCorrect(_ text: String) -> Bool {
+        let s = text.lowercased()
+        return s.contains("1812") || s.contains("mille ottocento") || s.contains("milleottocento")
+    }
+
+    private static func isHelpRequest(_ text: String) -> Bool {
+        // Normalize the curly apostrophe iOS substitutes ("don't" -> "don't").
+        let s = text.lowercased().replacingOccurrences(of: "\u{2019}", with: "'")
+        return s.contains("non lo so") || s.contains("non so") || s.contains("non saprei")
+            || s.contains("boh") || s.contains("idk")
+            || s.contains("don't know") || s.contains("dont know") || s.contains("no idea")
     }
 
     func start() {
         let chat = ChatViewController(viewModel: chatViewModel)
         chat.onBack = { [weak self] in self?.confirmAbandon() }
         chat.onReturnToCall = { [weak self] in self?.handleBannerTapped() }
+        chat.onCheckpoint = { [weak self] in self?.session.checkpointReached() }
+        chat.onCamera = { [weak self] in self?.presentCamera() }
+        chat.onNavigate = { [weak self] in self?.presentProximity() }
+        chat.onFinalize = { [weak self] in self?.presentMissionReport() }
         // Typed messages double as answers while the agent is awaiting one.
         chatViewModel.userMessageInterceptor = { [weak self] text in
             guard let self, self.session.isAwaitingAnswer else { return false }
@@ -126,6 +192,42 @@ final class CallCoordinator: NSObject {
         "\(L10n.activeCallReturnBanner.current)  ·  \(session.durationText)"
     }
 
+    /// The view controller to present mission modals from (over the call screen
+    /// if it's up, otherwise over the chat).
+    private var topPresenter: UIViewController {
+        navigationController.presentedViewController ?? navigationController
+    }
+
+    private func presentCamera() {
+        let cameraVC = FakeCameraViewController(viewModel: FakeCameraViewModel())
+        cameraVC.onCapture = { [weak self, weak cameraVC] in
+            cameraVC?.dismiss(animated: true) { self?.session.cameraCaptured() }
+        }
+        topPresenter.present(cameraVC, animated: true)
+    }
+
+    private func presentProximity() {
+        let proximityVC = AudioNavigationViewController(viewModel: AudioNavigationViewModel())
+        proximityVC.modalPresentationStyle = .fullScreen
+        proximityVC.onTargetFound = { [weak self, weak proximityVC] in
+            proximityVC?.dismiss(animated: true) { self?.session.proximityFound() }
+        }
+        topPresenter.present(proximityVC, animated: true)
+    }
+
+    private func presentMissionReport() {
+        let reportVC = MissionReportViewController(viewModel: MissionReportViewModel())
+        reportVC.onCollect = { [weak self] in
+            guard let self else { return }
+            // End the call and return to the main screen.
+            if !self.session.hasEnded { self.session.hangUp() }
+            self.navigationController.popToRootViewController(animated: false)
+            reportVC.dismiss(animated: true)
+            self.onFinished?()
+        }
+        topPresenter.present(reportVC, animated: true)
+    }
+
     private func refresh() {
         activeCallVC?.render()
         if !session.hasEnded {
@@ -162,6 +264,30 @@ extension CallCoordinator: CallSessionDelegate {
     func callSessionDidChangeSpeaking(_ session: CallSession) { refresh() }
     func callSessionDidChangeControls(_ session: CallSession) { refresh() }
     func callSessionDidChangeInteraction(_ session: CallSession) { refresh() }
+
+    func callSessionDidChangeCheckpoint(_ session: CallSession) {
+        chatVC?.setCheckpointVisible(session.isAwaitingCheckpoint)
+    }
+
+    func callSessionDidChangeCameraPrompt(_ session: CallSession) {
+        chatVC?.setCameraVisible(session.isAwaitingPhoto)
+    }
+
+    func callSessionDidChangeNavigationPrompt(_ session: CallSession) {
+        chatVC?.setNavigationVisible(session.isAwaitingNavigation)
+    }
+
+    func callSessionDidChangeFinalizePrompt(_ session: CallSession) {
+        chatVC?.setFinalizeVisible(session.isAwaitingFinalize)
+    }
+
+    func callSessionNeedsChatVisible(_ session: CallSession) {
+        // A mission element appeared in the chat; if the full call screen is
+        // covering it, minimize so the user can see/interact with it.
+        if activeCallVC != nil {
+            minimize()
+        }
+    }
 
     func callSessionDidEnd(_ session: CallSession) {
         // Stop the call UI but keep the chat visible and scrollable underneath.

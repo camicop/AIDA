@@ -1,5 +1,6 @@
-import Foundation
+import UIKit
 import AVFoundation
+import CoreLocation
 
 @MainActor
 protocol CallSessionDelegate: AnyObject {
@@ -8,6 +9,17 @@ protocol CallSessionDelegate: AnyObject {
     func callSessionDidChangeControls(_ session: CallSession)
     /// Awaiting-answer / listening / partial-transcript state changed.
     func callSessionDidChangeInteraction(_ session: CallSession)
+    /// The "I've arrived" checkpoint affordance should show/hide.
+    func callSessionDidChangeCheckpoint(_ session: CallSession)
+    /// The "take a photo" affordance should show/hide.
+    func callSessionDidChangeCameraPrompt(_ session: CallSession)
+    /// The "start navigation" affordance should show/hide.
+    func callSessionDidChangeNavigationPrompt(_ session: CallSession)
+    /// The "finalize the mission" affordance should show/hide.
+    func callSessionDidChangeFinalizePrompt(_ session: CallSession)
+    /// A mission element appeared in the chat; surface the chat if the full call
+    /// screen is covering it.
+    func callSessionNeedsChatVisible(_ session: CallSession)
     func callSessionDidEnd(_ session: CallSession)
 }
 
@@ -36,6 +48,18 @@ final class CallSession: NSObject {
     private(set) var isListening = false
     /// Live partial transcript shown while listening.
     private(set) var partialTranscript = ""
+    /// The agent is waiting for the user to tap "I've arrived" at a checkpoint.
+    private(set) var isAwaitingCheckpoint = false
+    /// The agent is waiting for the user to tap the "take a photo" button.
+    private(set) var isAwaitingPhoto = false
+    /// The agent is waiting for the user to tap the "start navigation" button.
+    private(set) var isAwaitingNavigation = false
+    /// The mission is over and waiting for the user to tap "finalize the mission".
+    private(set) var isAwaitingFinalize = false
+
+    private var pendingCheckpointEvent: String?
+    private var pendingProximityEvent: String?
+    private let mapFallback = CLLocationCoordinate2D(latitude: 46.0664, longitude: 11.1213)
 
     private let chatViewModel: ChatViewModel
     private var messageSource: AgentMessageSource
@@ -70,6 +94,7 @@ final class CallSession: NSObject {
         recognizer.cancel()
         messageSource.stop()
         speech.flushQueue()
+        chatViewModel.setTyping(false)
         stopTimer()
         deactivateAudioSession()
         delegate?.callSessionDidEnd(self)
@@ -84,6 +109,9 @@ final class CallSession: NSObject {
     func startListening() {
         guard !isListening, !hasEnded else { return }
         speech.flushQueue()
+        // Re-assert .playAndRecord in case a presented screen (e.g. proximity
+        // navigation) switched the shared session to .playback.
+        activateAudioSession()
         isListening = true
         partialTranscript = ""
         delegate?.callSessionDidChangeInteraction(self)
@@ -108,6 +136,87 @@ final class CallSession: NSObject {
             chatViewModel.appendUserMessage(trimmed)
         }
         messageSource.submitUserResponse(trimmed)
+    }
+
+    // MARK: - Mission interactions
+
+    /// Called when the user taps the "I've arrived" checkpoint button.
+    func checkpointReached() {
+        guard isAwaitingCheckpoint else { return }
+        isAwaitingCheckpoint = false
+        if let event = pendingCheckpointEvent {
+            SessionRecorder.shared.logEvent(event)
+            pendingCheckpointEvent = nil
+        }
+        chatViewModel.appendUserMessage(L10n.checkpointArrivedMessage.current)
+        delegate?.callSessionDidChangeCheckpoint(self)
+        messageSource.signalInteractionComplete()
+    }
+
+    /// Called when the fake camera captures a photo. Shows it as a user-sent
+    /// image bubble, then advances the script.
+    func cameraCaptured() {
+        isAwaitingPhoto = false
+        delegate?.callSessionDidChangeCameraPrompt(self)
+        chatViewModel.appendUserImage(Self.missionPhoto())
+        messageSource.signalInteractionComplete()
+    }
+
+    /// The "photo" shown in the chat. Uses the "facade" asset if present;
+    /// otherwise a placeholder is used.
+    private static func missionPhoto() -> UIImage {
+        if let asset = UIImage(named: "facade") { return asset }
+        let size = CGSize(width: 240, height: 180)
+        return UIGraphicsImageRenderer(size: size).image { context in
+            UIColor.systemGray3.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+            let config = UIImage.SymbolConfiguration(pointSize: 48)
+            if let symbol = UIImage(systemName: "photo.fill", withConfiguration: config)?
+                .withTintColor(.systemGray, renderingMode: .alwaysOriginal) {
+                symbol.draw(at: CGPoint(x: (size.width - symbol.size.width) / 2,
+                                        y: (size.height - symbol.size.height) / 2))
+            }
+        }
+    }
+
+    /// Called when the proximity screen's "target found" button is tapped.
+    func proximityFound() {
+        isAwaitingNavigation = false
+        delegate?.callSessionDidChangeNavigationPrompt(self)
+        if let event = pendingProximityEvent {
+            SessionRecorder.shared.logEvent(event)
+            pendingProximityEvent = nil
+        }
+        // The proximity screen reconfigured/deactivated the shared audio session;
+        // re-activate ours so the agent's voice works again.
+        activateAudioSession()
+        messageSource.signalInteractionComplete()
+    }
+
+    /// Presents three possible answers (years) as tappable cards. Tapping one
+    /// submits it as the answer to the enigma.
+    private func presentAnswerOptions() {
+        let options = [
+            HintOptionGroup.Option(title: "1715", value: "1715"),
+            HintOptionGroup.Option(title: "1812", value: "1812"),
+            HintOptionGroup.Option(title: "1230", value: "1230")
+        ]
+        let group = HintOptionGroup(options: options)
+        group.onSelect = { [weak self] index in
+            guard let self, index < options.count else { return }
+            self.deliverAnswer(options[index].value, addBubble: true)
+        }
+        chatViewModel.appendHints(group)
+    }
+
+    private func renderMapBubble(bearingDegrees: Double, distanceMeters: Double) {
+        let center = SessionRecorder.shared.currentLocation?.coordinate ?? mapFallback
+        MapSnapshotRenderer.render(center: center,
+                                   bearingDegrees: bearingDegrees,
+                                   distanceMeters: distanceMeters) { [weak self] image in
+            guard let self, let image else { return }
+            self.chatViewModel.appendAgentImage(image)
+        }
     }
 
     // MARK: - Controls
@@ -193,6 +302,11 @@ extension CallSession: AgentMessageSourceDelegate {
     func messageSource(_ source: AgentMessageSource, didReveal text: String) {
         hasStartedTalking = true
         chatViewModel.appendAgentMessage(text)
+        speakAgentLine(text)
+    }
+
+    /// Speaks an agent line, queueing it for after unmute if currently muted.
+    private func speakAgentLine(_ text: String) {
         if isMuted {
             mutedBacklog.append(text)
         } else {
@@ -200,9 +314,64 @@ extension CallSession: AgentMessageSourceDelegate {
         }
     }
 
+    func messageSourceDidStartTyping(_ source: AgentMessageSource) {
+        chatViewModel.setTyping(true)
+    }
+
+    func messageSource(_ source: AgentMessageSource, didStartLoading text: String) {
+        chatViewModel.setLoading(text, on: true)
+        speakAgentLine(text)
+    }
+
+    func messageSource(_ source: AgentMessageSource, didRevealSuccess text: String) {
+        hasStartedTalking = true
+        chatViewModel.appendSuccess(text)
+        speakAgentLine(text)
+    }
+
     func messageSourceDidRequestUserResponse(_ source: AgentMessageSource) {
         isAwaitingAnswer = true
         delegate?.callSessionDidChangeInteraction(self)
+    }
+
+    func messageSource(_ source: AgentMessageSource, didRequestMapBearing bearingDegrees: Double, distanceMeters: Double) {
+        delegate?.callSessionNeedsChatVisible(self)
+        renderMapBubble(bearingDegrees: bearingDegrees, distanceMeters: distanceMeters)
+    }
+
+    func messageSource(_ source: AgentMessageSource, didRequestCheckpoint event: String) {
+        pendingCheckpointEvent = event
+        isAwaitingCheckpoint = true
+        delegate?.callSessionNeedsChatVisible(self)
+        delegate?.callSessionDidChangeCheckpoint(self)
+    }
+
+    func messageSourceDidRequestCamera(_ source: AgentMessageSource) {
+        isAwaitingPhoto = true
+        delegate?.callSessionNeedsChatVisible(self)
+        delegate?.callSessionDidChangeCameraPrompt(self)
+    }
+
+    func messageSource(_ source: AgentMessageSource, didRequestProximity event: String) {
+        pendingProximityEvent = event
+        isAwaitingNavigation = true
+        delegate?.callSessionNeedsChatVisible(self)
+        delegate?.callSessionDidChangeNavigationPrompt(self)
+    }
+
+    func messageSourceDidRequestHints(_ source: AgentMessageSource) {
+        delegate?.callSessionNeedsChatVisible(self)
+        presentAnswerOptions()
+    }
+
+    func messageSource(_ source: AgentMessageSource, didComplete event: String) {
+        SessionRecorder.shared.logEvent(event)
+    }
+
+    func messageSourceDidRequestFinalize(_ source: AgentMessageSource) {
+        isAwaitingFinalize = true
+        delegate?.callSessionNeedsChatVisible(self)
+        delegate?.callSessionDidChangeFinalizePrompt(self)
     }
 
     func messageSourceDidFinish(_ source: AgentMessageSource) {}
