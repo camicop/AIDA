@@ -25,6 +25,16 @@ final class CallViewController: UIViewController {
         enableDeveloperModeAccess()
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        HapticService.shared.startRinging()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        HapticService.shared.stopRinging()
+    }
+
     private func setupViews() {
         avatarView.image = UIImage(systemName: viewModel.agentIconName)
         avatarView.tintColor = Theme.accent

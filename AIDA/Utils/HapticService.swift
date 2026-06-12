@@ -1,4 +1,5 @@
 import UIKit
+import AudioToolbox
 
 final class HapticService {
     static let shared = HapticService()
@@ -8,8 +9,29 @@ final class HapticService {
     private let notification = UINotificationFeedbackGenerator()
     private var pulseTimer: Timer?
     private var successTimer: Timer?
+    private var ringTimer: Timer?
+    private var ringStopWork: DispatchWorkItem?
 
     private init() {}
+
+    /// Repeating "incoming call" vibration that auto-stops after `duration`.
+    func startRinging(duration: TimeInterval = 20) {
+        stopRinging()
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+        ringTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+        }
+        let work = DispatchWorkItem { [weak self] in self?.stopRinging() }
+        ringStopWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration, execute: work)
+    }
+
+    func stopRinging() {
+        ringTimer?.invalidate()
+        ringTimer = nil
+        ringStopWork?.cancel()
+        ringStopWork = nil
+    }
 
     func updateGuidance(forDistance distance: Double) {
         let clamped = max(3.0, min(50.0, distance))
