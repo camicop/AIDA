@@ -11,6 +11,7 @@ final class DeveloperViewController: UIViewController {
     private let speedRow = StatRow()
     private let cadenceRow = StatRow()
     private let pitchRow = StatRow()
+    private let navTestButton = UIButton(type: .system)
     private let exportButton = UIButton(type: .system)
 
     private var trackOverlay: MKPolyline?
@@ -72,6 +73,17 @@ final class DeveloperViewController: UIViewController {
         statsStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(statsStack)
 
+        var navConfig = UIButton.Configuration.gray()
+        navConfig.title = viewModel.testNavigationTitle
+        navConfig.image = UIImage(systemName: "location.fill.viewfinder")
+        navConfig.imagePadding = 8
+        navConfig.cornerStyle = .large
+        navConfig.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 24, bottom: 14, trailing: 24)
+        navTestButton.configuration = navConfig
+        navTestButton.addTarget(self, action: #selector(didTapTestNavigation), for: .touchUpInside)
+        navTestButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(navTestButton)
+
         var config = UIButton.Configuration.filled()
         config.title = viewModel.exportTitle
         config.cornerStyle = .large
@@ -94,7 +106,11 @@ final class DeveloperViewController: UIViewController {
 
             statsStack.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             statsStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
-            statsStack.bottomAnchor.constraint(equalTo: exportButton.topAnchor, constant: -16),
+            statsStack.bottomAnchor.constraint(equalTo: navTestButton.topAnchor, constant: -16),
+
+            navTestButton.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+            navTestButton.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+            navTestButton.bottomAnchor.constraint(equalTo: exportButton.topAnchor, constant: -12),
 
             exportButton.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             exportButton.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
@@ -143,6 +159,11 @@ final class DeveloperViewController: UIViewController {
 
     @objc private func didTapClose() {
         dismiss(animated: true)
+    }
+
+    @objc private func didTapTestNavigation() {
+        let vc = AudioNavigationViewController(viewModel: AudioNavigationViewModel())
+        navigationController?.pushViewController(vc, animated: true)
     }
 
     @objc private func didTapExport() {

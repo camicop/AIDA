@@ -5,6 +5,7 @@ final class DeveloperViewModel {
     var closeTitle: String { L10n.developerClose.current }
     var emptyMessage: String { L10n.developerNoMission.current }
     var exportTitle: String { L10n.developerExport.current }
+    var testNavigationTitle: String { L10n.callTestNavigation.current }
     var speedLabel: String { L10n.developerStatSpeed.current }
     var cadenceLabel: String { L10n.developerStatCadence.current }
     var pitchLabel: String { L10n.developerStatPitch.current }

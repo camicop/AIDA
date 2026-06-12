@@ -243,6 +243,7 @@ final class ChatViewController: UIViewController {
         textField.borderStyle = .roundedRect
         textField.returnKeyType = .send
         textField.delegate = self
+        textField.inputAccessoryView = makeKeyboardToolbar()
         textField.translatesAutoresizingMaskIntoConstraints = false
 
         var sendConfig = UIButton.Configuration.filled()
@@ -337,6 +338,24 @@ final class ChatViewController: UIViewController {
         let text = textField.text ?? ""
         textField.text = ""
         viewModel.sendUserMessage(text)
+    }
+
+    private func makeKeyboardToolbar() -> UIToolbar {
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let done = UIBarButtonItem(
+            title: L10n.keyboardDone.current,
+            style: .done,
+            target: self,
+            action: #selector(dismissKeyboard)
+        )
+        toolbar.items = [spacer, done]
+        return toolbar
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
 
     private func scrollToBottom() {

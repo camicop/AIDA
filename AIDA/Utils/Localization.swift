@@ -209,6 +209,14 @@ enum L10n {
     static let audioNavigationTargetReached = LocalizedString(
         it: "Obiettivo raggiunto!",
         en: "Target reached!")
+    static let navSwitchToCompass = LocalizedString(it: "Modalità bussola", en: "Compass mode")
+    static let navSwitchToColor = LocalizedString(it: "Modalità colore", en: "Color mode")
+    static let navColorHint = LocalizedString(
+        it: "Muoviti finché lo schermo diventa verde.",
+        en: "Move until the screen turns green.")
+    static let navCompassHint = LocalizedString(
+        it: "Ruota il telefono: la vibrazione accelera quando punti nella direzione giusta. Una vibrazione lunga = arrivato.",
+        en: "Rotate the phone: the vibration speeds up as you face the right direction. One long buzz = arrived.")
 
     // MARK: - Developer mode
 

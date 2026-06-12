@@ -84,10 +84,4 @@ extension AppCoordinator: CallViewModelDelegate {
         let vc = ChatViewController(viewModel: chatVM)
         navigationController.pushViewController(vc, animated: true)
     }
-
-    func callDidRequestTestNavigation(_ viewModel: CallViewModel) {
-        let audioVM = AudioNavigationViewModel()
-        let vc = AudioNavigationViewController(viewModel: audioVM)
-        navigationController.pushViewController(vc, animated: true)
-    }
 }

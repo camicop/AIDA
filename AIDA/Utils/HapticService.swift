@@ -18,6 +18,17 @@ final class HapticService {
         schedulePulse(interval: interval)
     }
 
+    /// Pulse frequency driven by heading alignment: `alignment` 0 = facing the
+    /// target (fast pulses), 1 = facing away (slow pulses). The curve is flat
+    /// near 0 so slightly-off directions stay nearly as fast as the correct one,
+    /// and only larger deviations slow down noticeably.
+    func updateHeadingGuidance(alignment: Double) {
+        let clamped = max(0.0, min(1.0, alignment))
+        let curved = pow(clamped, 1.8)
+        let interval = 0.08 + curved * (1.3 - 0.08)
+        schedulePulse(interval: interval)
+    }
+
     func stop() {
         pulseTimer?.invalidate()
         pulseTimer = nil

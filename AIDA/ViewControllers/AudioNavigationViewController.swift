@@ -10,10 +10,13 @@ final class AudioNavigationViewController: UIViewController {
     private let pulseView = UIView()
     private let statusLabel = UILabel()
     private let distanceLabel = UILabel()
+    private let hintLabel = UILabel()
+    private let modeButton = UIButton(type: .system)
     private let targetFoundButton = UIButton(type: .system)
     private let debugTitleLabel = UILabel()
     private let debugSwitch = UISwitch()
     private let debugSlider = UISlider()
+    private let debugStack = UIStackView()
 
     init(viewModel: AudioNavigationViewModel) {
         self.viewModel = viewModel
@@ -29,19 +32,18 @@ final class AudioNavigationViewController: UIViewController {
         view.backgroundColor = .black
         viewModel.binding = self
         setupViews()
+        updateAppearanceForMode()
         enableDeveloperModeAccess()
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         startPulse()
-        viewModel.startNarration()
         viewModel.startTracking()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        viewModel.stopNarration()
         viewModel.stopTracking()
     }
 
@@ -67,20 +69,25 @@ final class AudioNavigationViewController: UIViewController {
         distanceLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(distanceLabel)
 
+        hintLabel.text = viewModel.hintText
+        hintLabel.textColor = UIColor.white.withAlphaComponent(0.85)
+        hintLabel.font = .systemFont(ofSize: 15)
+        hintLabel.textAlignment = .center
+        hintLabel.numberOfLines = 0
+        hintLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(hintLabel)
+
+        // Bottom controls: mode toggle, optional target-found, and debug sim.
         debugTitleLabel.text = viewModel.debugSimulatorLabel
         debugTitleLabel.textColor = .lightGray
         debugTitleLabel.font = .systemFont(ofSize: 14, weight: .medium)
-        debugTitleLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        debugSwitch.translatesAutoresizingMaskIntoConstraints = false
         debugSwitch.addTarget(self, action: #selector(debugSwitchChanged), for: .valueChanged)
 
         let switchRow = UIStackView(arrangedSubviews: [debugTitleLabel, debugSwitch])
         switchRow.axis = .horizontal
         switchRow.spacing = 12
         switchRow.alignment = .center
-        switchRow.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(switchRow)
 
         debugSlider.minimumValue = 0
         debugSlider.maximumValue = 60
@@ -88,8 +95,25 @@ final class AudioNavigationViewController: UIViewController {
         debugSlider.isEnabled = false
         debugSlider.minimumTrackTintColor = Theme.accent
         debugSlider.addTarget(self, action: #selector(debugSliderChanged), for: .valueChanged)
-        debugSlider.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(debugSlider)
+
+        debugStack.axis = .vertical
+        debugStack.spacing = 12
+        debugStack.addArrangedSubview(switchRow)
+        debugStack.addArrangedSubview(debugSlider)
+
+        var modeConfig = UIButton.Configuration.gray()
+        modeConfig.image = UIImage(systemName: "arrow.triangle.2.circlepath")
+        modeConfig.imagePadding = 8
+        modeConfig.cornerStyle = .large
+        modeConfig.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 24, bottom: 12, trailing: 24)
+        modeButton.configuration = modeConfig
+        modeButton.addTarget(self, action: #selector(didTapModeSwitch), for: .touchUpInside)
+
+        let bottomStack = UIStackView()
+        bottomStack.axis = .vertical
+        bottomStack.spacing = 16
+        bottomStack.translatesAutoresizingMaskIntoConstraints = false
+        bottomStack.addArrangedSubview(debugStack)
 
         if onTargetFound != nil {
             var config = UIButton.Configuration.filled()
@@ -99,20 +123,16 @@ final class AudioNavigationViewController: UIViewController {
             config.cornerStyle = .large
             config.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 24, bottom: 14, trailing: 24)
             targetFoundButton.configuration = config
-            targetFoundButton.translatesAutoresizingMaskIntoConstraints = false
             targetFoundButton.addTarget(self, action: #selector(didTapTargetFound), for: .touchUpInside)
-            view.addSubview(targetFoundButton)
-
-            NSLayoutConstraint.activate([
-                targetFoundButton.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-                targetFoundButton.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
-                targetFoundButton.bottomAnchor.constraint(equalTo: switchRow.topAnchor, constant: -24)
-            ])
+            bottomStack.addArrangedSubview(targetFoundButton)
         }
+
+        bottomStack.addArrangedSubview(modeButton)
+        view.addSubview(bottomStack)
 
         NSLayoutConstraint.activate([
             pulseView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            pulseView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -60),
+            pulseView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -80),
             pulseView.widthAnchor.constraint(equalToConstant: 120),
             pulseView.heightAnchor.constraint(equalToConstant: 120),
 
@@ -124,14 +144,25 @@ final class AudioNavigationViewController: UIViewController {
             distanceLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             distanceLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
 
-            switchRow.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-            switchRow.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
-            switchRow.bottomAnchor.constraint(equalTo: debugSlider.topAnchor, constant: -16),
+            hintLabel.topAnchor.constraint(equalTo: distanceLabel.bottomAnchor, constant: 20),
+            hintLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+            hintLabel.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
 
-            debugSlider.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-            debugSlider.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
-            debugSlider.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24)
+            bottomStack.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+            bottomStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+            bottomStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24)
         ])
+    }
+
+    private func updateAppearanceForMode() {
+        let isCompass = viewModel.mode == .compass
+        debugStack.isHidden = isCompass
+        distanceLabel.isHidden = isCompass
+        hintLabel.text = viewModel.hintText
+        modeButton.configuration?.title = viewModel.modeButtonTitle
+        if isCompass {
+            UIView.animate(withDuration: 0.25) { self.view.backgroundColor = .black }
+        }
     }
 
     private func startPulse() {
@@ -142,6 +173,10 @@ final class AudioNavigationViewController: UIViewController {
             self.pulseView.transform = CGAffineTransform(scaleX: 1.3, y: 1.3)
             self.pulseView.alpha = 0.4
         })
+    }
+
+    @objc private func didTapModeSwitch() {
+        viewModel.toggleMode()
     }
 
     @objc private func didTapTargetFound() {
@@ -168,10 +203,15 @@ extension AudioNavigationViewController: AudioNavigationViewModelBinding {
     }
 
     func audioNavigationViewModel(_ viewModel: AudioNavigationViewModel, didUpdateAlignment alignment: Double) {
-        let color = directionColor(for: alignment)
+        // Color feedback only in color mode; compass mode stays dark.
+        guard viewModel.mode == .color else { return }
         UIView.animate(withDuration: 0.2) {
-            self.view.backgroundColor = color
+            self.view.backgroundColor = directionColor(for: alignment)
         }
+    }
+
+    func audioNavigationViewModelDidChangeMode(_ viewModel: AudioNavigationViewModel) {
+        updateAppearanceForMode()
     }
 }
 

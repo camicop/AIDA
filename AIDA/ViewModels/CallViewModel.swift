@@ -3,7 +3,6 @@ import Foundation
 protocol CallViewModelDelegate: AnyObject {
     func callDidAnswer(_ viewModel: CallViewModel)
     func callDidPreferChat(_ viewModel: CallViewModel)
-    func callDidRequestTestNavigation(_ viewModel: CallViewModel)
 }
 
 final class CallViewModel {
@@ -15,7 +14,6 @@ final class CallViewModel {
 
     var answerButtonTitle: String { L10n.callAnswer.current }
     var chatButtonTitle: String { L10n.callPreferChat.current }
-    var testButtonTitle: String { L10n.callTestNavigation.current }
 
     func answer() {
         delegate?.callDidAnswer(self)
@@ -23,9 +21,5 @@ final class CallViewModel {
 
     func preferChat() {
         delegate?.callDidPreferChat(self)
-    }
-
-    func tapTest() {
-        delegate?.callDidRequestTestNavigation(self)
     }
 }
