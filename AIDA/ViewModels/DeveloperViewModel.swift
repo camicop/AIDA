@@ -17,15 +17,16 @@ final class DeveloperViewModel {
     var isAcquiringGPSFix: Bool { SessionRecorder.shared.isAcquiringGPSFix }
 
     var trackCoordinates: [CLLocationCoordinate2D] {
-        SessionRecorder.shared.dataPoints.map {
-            CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+        SessionRecorder.shared.dataPoints.compactMap { point in
+            guard let lat = point.latitude, let lon = point.longitude else { return nil }
+            return CLLocationCoordinate2D(latitude: lat, longitude: lon)
         }
     }
 
     var currentLocation: CLLocation? { SessionRecorder.shared.currentLocation }
 
     var speedDisplay: String {
-        if let speed = SessionRecorder.shared.dataPoints.last?.speedMS {
+        if let speed = SessionRecorder.shared.currentSpeed {
             return String(format: "%.2f", speed)
         }
         return placeholder
