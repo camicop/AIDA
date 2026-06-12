@@ -218,6 +218,34 @@ enum L10n {
         it: "Ruota il telefono: la vibrazione accelera quando punti nella direzione giusta. Una vibrazione lunga = arrivato.",
         en: "Rotate the phone: the vibration speeds up as you face the right direction. One long buzz = arrived.")
 
+    // MARK: - Phone walking detection
+
+    static let testPhoneWalkingTitle = LocalizedString(it: "Test Camminata", en: "Test Phone Walking")
+    static let navScreenTitle = LocalizedString(it: "Navigazione", en: "Navigation")
+    static let navPitchFormat = LocalizedString(it: "Pitch: %.1f°", en: "Pitch: %.1f°")
+    static let navZoneTimerFormat = LocalizedString(it: "In zona: %.1f / 10 s", en: "In zone: %.1f / 10 s")
+    static let phoneWalkingMessage = LocalizedString(
+        it: "Agente, prova ad affidarti di più al navigatore vocale. Tieni il telefono in tasca.",
+        en: "Agent, try relying more on the voice navigator. Keep your phone in your pocket.")
+    static let phoneWalkingPopup = LocalizedString(it: "Usa meno lo schermo", en: "Use the screen less")
+    static let navHints: [LocalizedString] = [
+        LocalizedString(
+            it: "Continua dritto per altri 200 metri.",
+            en: "Continue straight for another 200 metres."),
+        LocalizedString(
+            it: "Il tuo obiettivo è a nord. Mantieni la direzione.",
+            en: "Your objective is to the north. Keep your heading."),
+        LocalizedString(
+            it: "Sei sulla strada giusta, agente.",
+            en: "You're on the right track, agent."),
+        LocalizedString(
+            it: "Tra poco raggiungerai la zona di interesse.",
+            en: "You will reach the area of interest shortly."),
+        LocalizedString(
+            it: "Segnale stabile. Prosegui.",
+            en: "Signal stable. Keep moving.")
+    ]
+
     // MARK: - Developer mode
 
     static let developerTitle = LocalizedString(it: "Sviluppatore", en: "Developer")

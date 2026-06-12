@@ -12,6 +12,7 @@ final class DeveloperViewController: UIViewController {
     private let cadenceRow = StatRow()
     private let pitchRow = StatRow()
     private let navTestButton = UIButton(type: .system)
+    private let phoneWalkingButton = UIButton(type: .system)
     private let exportButton = UIButton(type: .system)
 
     private var trackOverlay: MKPolyline?
@@ -84,6 +85,17 @@ final class DeveloperViewController: UIViewController {
         navTestButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(navTestButton)
 
+        var walkConfig = UIButton.Configuration.gray()
+        walkConfig.title = viewModel.testPhoneWalkingTitle
+        walkConfig.image = UIImage(systemName: "figure.walk")
+        walkConfig.imagePadding = 8
+        walkConfig.cornerStyle = .large
+        walkConfig.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 24, bottom: 14, trailing: 24)
+        phoneWalkingButton.configuration = walkConfig
+        phoneWalkingButton.addTarget(self, action: #selector(didTapTestPhoneWalking), for: .touchUpInside)
+        phoneWalkingButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(phoneWalkingButton)
+
         var config = UIButton.Configuration.filled()
         config.title = viewModel.exportTitle
         config.cornerStyle = .large
@@ -106,7 +118,11 @@ final class DeveloperViewController: UIViewController {
 
             statsStack.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             statsStack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
-            statsStack.bottomAnchor.constraint(equalTo: navTestButton.topAnchor, constant: -16),
+            statsStack.bottomAnchor.constraint(equalTo: phoneWalkingButton.topAnchor, constant: -16),
+
+            phoneWalkingButton.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+            phoneWalkingButton.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+            phoneWalkingButton.bottomAnchor.constraint(equalTo: navTestButton.topAnchor, constant: -12),
 
             navTestButton.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             navTestButton.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
@@ -164,6 +180,13 @@ final class DeveloperViewController: UIViewController {
     @objc private func didTapTestNavigation() {
         let vc = AudioNavigationViewController(viewModel: AudioNavigationViewModel())
         navigationController?.pushViewController(vc, animated: true)
+    }
+
+    @objc private func didTapTestPhoneWalking() {
+        let vc = FakeNavigationViewController(viewModel: FakeNavigationViewModel())
+        let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
     }
 
     @objc private func didTapExport() {
