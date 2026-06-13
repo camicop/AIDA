@@ -2,6 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>A.I.D.A. usa la tua posizione per guidarti tra le tappe della missione.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>A.I.D.A. usa il microfono per permetterti di parlare con l'agente AI durante l'avventura.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>A.I.D.A. usa il riconoscimento vocale per trascrivere le tue risposte all'agente durante la chiamata.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>A.I.D.A. usa la fotocamera per catturare indizi e momenti della missione.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>A.I.D.A. legge i dati di salute per adattare il ritmo della missione al tuo stato di forma.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>A.I.D.A. usa i sensori di movimento per misurare la tua cadenza di passo e l'inclinazione durante la missione.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
