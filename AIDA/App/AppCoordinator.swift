@@ -73,15 +73,22 @@ extension AppCoordinator: CallViewModelDelegate {
     func callDidAnswer(_ viewModel: CallViewModel) {
         // Start the simulated call: chat as the base screen with the full call
         // presented over it. (AudioNavigation is intentionally left unwired here.)
-        let coordinator = CallCoordinator(navigationController: navigationController)
-        coordinator.onFinished = { [weak self] in self?.callCoordinator = nil }
-        callCoordinator = coordinator
-        coordinator.start()
+        startSimulatedCall()
     }
 
     func callDidPreferChat(_ viewModel: CallViewModel) {
         let chatVM = ChatViewModel()
-        let vc = ChatViewController(viewModel: chatVM)
-        navigationController.pushViewController(vc, animated: true)
+        let chat = ChatViewController(viewModel: chatVM)
+        // Keep a call button available in case the user changes their mind.
+        chat.onReturnToCall = { [weak self] in self?.startSimulatedCall() }
+        chat.setReturnButtonVisible(true)
+        navigationController.pushViewController(chat, animated: true)
+    }
+
+    private func startSimulatedCall() {
+        let coordinator = CallCoordinator(navigationController: navigationController)
+        coordinator.onFinished = { [weak self] in self?.callCoordinator = nil }
+        callCoordinator = coordinator
+        coordinator.start()
     }
 }
